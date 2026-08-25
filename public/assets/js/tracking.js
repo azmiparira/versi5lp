@@ -1,6 +1,6 @@
 // ============================================================
 // tracking.js — Halaman Lacak Pesanan
-// Perbaikan: pencarian no HP tanpa 0 di depan, throttle, tampilan list
+// Perbaikan: input HP dengan prefix +62, timeline, list dalam kotak
 // ============================================================
 
 (function() {
@@ -15,7 +15,7 @@
     const rupiah = (n) => 'Rp' + Math.round(n || 0).toLocaleString('id-ID');
     let cameFromOrderParam = false;
 
-    // ===== THROTTLE: minimal 2 detik antar request =====
+    // ===== THROTTLE =====
     let lastRequestTime = 0;
     const MIN_REQUEST_INTERVAL = 2000;
 
@@ -38,13 +38,14 @@
         INDOMARET: 'Indomaret',
     };
 
-    // ===== RENDER TIMELINE =====
+    // ===== RENDER TIMELINE (DENGAN BULATAN & GARIS) =====
     function renderTimeline(shippingStatus) {
         const waitingBox = $('#waiting-payment-box');
         const timelineBox = $('#timeline-box');
 
         if (!waitingBox || !timelineBox) return;
 
+        // Jika status = MENUNGGU_PEMBAYARAN, tampilkan box khusus
         if (shippingStatus === 'MENUNGGU_PEMBAYARAN') {
             waitingBox.style.display = 'block';
             timelineBox.style.display = 'none';
@@ -53,16 +54,24 @@
         waitingBox.style.display = 'none';
         timelineBox.style.display = 'block';
 
+        // Langkah-langkah status
         const steps = ['DIKEMAS', 'DIKIRIM', 'DITERIMA'];
         const idx = steps.indexOf(shippingStatus);
+
+        // Update tiap step
         steps.forEach((s, i) => {
             const el = $(`#tl-step-${i + 1}`);
             if (el) {
                 el.classList.remove('done', 'current');
-                if (i < idx) el.classList.add('done');
-                else if (i === idx) el.classList.add('current', 'done');
+                if (i < idx) {
+                    el.classList.add('done');       // selesai
+                } else if (i === idx) {
+                    el.classList.add('current', 'done'); // aktif
+                }
             }
         });
+
+        // Progress bar (garis)
         const pct = idx <= 0 ? 0 : idx === 1 ? 50 : 100;
         const progress = $('#tl-progress');
         if (progress) progress.style.width = `${pct}%`;
@@ -123,7 +132,7 @@
         });
     }
 
-    // ===== SEARCH BY PHONE (dengan throttle) =====
+    // ===== SEARCH BY PHONE (dengan prefix +62) =====
     async function searchByPhone(phone) {
         // Throttle
         const now = Date.now();
@@ -163,7 +172,7 @@
         }
     }
 
-    // ===== LOAD BY ORDER ID (redirect dari checkout) =====
+    // ===== LOAD BY ORDER ID =====
     async function loadByOrderId(orderId) {
         try {
             const res = await fetch(`${API_BASE_URL}/check-status?orderId=${encodeURIComponent(orderId)}`);
@@ -196,11 +205,11 @@
         const searchBtn = $('#search-btn');
         const phoneInput = $('#phone-input');
 
-        // ===== EVENT SEARCH =====
+        // ===== SEARCH =====
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
                 const raw = phoneInput ? phoneInput.value.trim() : '';
-                // Hapus semua karakter non-digit (termasuk 0 di depan akan hilang)
+                // Hapus semua karakter non-digit (prefix +62 sudah di HTML)
                 const phone = raw.replace(/\D/g, '');
                 if (phone.length < 8) {
                     const msgEl = $('#search-msg');
@@ -243,7 +252,7 @@
             });
         }
 
-        // ===== CEK PARAMETER ORDER DARI CHECKOUT =====
+        // ===== CEK PARAMETER ORDER =====
         const params = new URLSearchParams(window.location.search);
         const orderIdParam = params.get('order');
         if (orderIdParam) {
