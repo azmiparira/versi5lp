@@ -8,9 +8,11 @@ const BASE_URL = process.env.CASHI_BASE_URL || 'https://cashi.id';
 const API_KEY = process.env.CASHI_API_KEY;
 const WEBHOOK_SECRET = process.env.CASHI_WEBHOOK_SECRET;
 
+// Daftar channel pembayaran yang didukung Cashi
+// !!! QRIS harus pakai kode 'QRIS_CUSTOM' (bukan 'Ya') !!!
 const PAYMENT_CHANNELS = {
   COD: { kode_channel: null, label: 'COD', group: 'COD', min: 0, max: 0 },
-  QRIS: { kode_channel: 'Ya', label: 'QRIS', group: 'QRIS', min: 2000, max: 10000000 },
+  QRIS: { kode_channel: 'QRIS_CUSTOM', label: 'QRIS', group: 'QRIS', min: 2000, max: 10000000 },
   MANDIRI: { kode_channel: 'MANDIRI', label: 'Mandiri VA', group: 'VA', min: 10000, max: 50000000 },
   BCA: { kode_channel: 'BCA', label: 'BCA VA', group: 'VA', min: 10000, max: 50000000 },
   BNI: { kode_channel: 'BNI', label: 'BNI VA', group: 'VA', min: 10000, max: 50000000 },
@@ -22,20 +24,32 @@ const PAYMENT_CHANNELS = {
 
 async function cashiFetch(path, options = {}) {
   if (!API_KEY) throw new Error('CASHI_API_KEY belum diset.');
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const url = `${BASE_URL}${path}`;
+  console.log(`🌐 Cashi request: ${options.method || 'GET'} ${url}`);
+  if (options.body) console.log('📦 Payload:', options.body);
+
+  const res = await fetch(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, ...(options.headers || {}) },
   });
   const data = await res.json().catch(() => ({}));
+  console.log('📥 Cashi response status:', res.status);
+  console.log('📥 Cashi response data:', data);
+
   if (!res.ok || data.success === false) {
     const err = new Error(data.message || `Cashi API error (${res.status})`);
     err.response = data;
+    err.status = res.status;
     throw err;
   }
   return data;
 }
 
 async function createOrder({ amount, orderId, kodeChannel }) {
+  // Pastikan kodeChannel bukan null/undefined untuk NON-COD
+  if (!kodeChannel) {
+    throw new Error('kodeChannel wajib diisi untuk pembayaran NON-COD');
+  }
   return cashiFetch('/api/create-order', {
     method: 'POST',
     body: JSON.stringify({ amount: Math.round(amount), order_id: orderId, kode_channel: kodeChannel }),
