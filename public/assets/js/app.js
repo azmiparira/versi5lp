@@ -1,9 +1,10 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
-// FULL VERSION — revisi:
-// - Prefix +62 untuk nomor HP
-// - Harga coret hanya saat voucher digunakan
-// - Tombol konfirmasi dihapus
+// FULL VERSION dengan perbaikan:
+// - Input HP pakai prefix +62 (bendera Indonesia)
+// - Voucher coret total asli, bukan harga produk
+// - Tombol konfirmasi di packed dihapus
+// - Sticky footer disembunyikan di payment/packed
 // ============================================================
 
 (function() {
@@ -48,6 +49,9 @@
         return Math.round(total - (total * disc / 100));
     }
 
+    // ============================================================
+    // 2. UPDATE PRICE DISPLAY (dengan coretan total + ongkir)
+    // ============================================================
     function updatePriceDisplay() {
         const qty = currentQty;
         const originalTotal = productPrice * qty;
@@ -78,7 +82,7 @@
             summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
         }
 
-        // ===== TOTAL: tampilkan coret hanya jika voucher digunakan =====
+        // ===== TOTAL: tampilkan coret jika voucher digunakan =====
         const summaryTotal = document.getElementById('summary-total');
         if (summaryTotal) {
             if (voucherUsed) {
@@ -94,18 +98,20 @@
             }
         }
 
-        // Footer: harga coret hanya muncul jika voucher digunakan
+        // ===== FOOTER: sembunyikan footer-original jika voucher tidak dipakai =====
         const footerOriginal = document.getElementById('footer-original');
         const footerDiscount = document.getElementById('footer-discount');
         if (footerOriginal) {
             if (voucherUsed) {
-                footerOriginal.style.display = 'inline';
+                footerOriginal.style.display = 'block';
                 footerOriginal.textContent = 'Rp ' + totalOriginal.toLocaleString();
             } else {
                 footerOriginal.style.display = 'none';
             }
         }
-        if (footerDiscount) footerDiscount.textContent = 'Rp ' + totalDiscounted.toLocaleString();
+        if (footerDiscount) {
+            footerDiscount.textContent = 'Rp ' + totalDiscounted.toLocaleString();
+        }
 
         // Sticky
         const stickyPrice = document.getElementById('sticky-price');
@@ -123,7 +129,7 @@
     }
 
     // ============================================================
-    // 2. LOAD CONFIG
+    // 3. LOAD CONFIG
     // ============================================================
     async function loadConfig() {
         try {
@@ -146,7 +152,7 @@
     }
 
     // ============================================================
-    // 3. SEARCH KECAMATAN
+    // 4. SEARCH KECAMATAN
     // ============================================================
     function initSearchKecamatan() {
         const searchInput = document.getElementById('kecamatan-search');
@@ -218,7 +224,7 @@
     }
 
     // ============================================================
-    // 4. RENDER PAYMENT & COURIER
+    // 5. RENDER PAYMENT & COURIER
     // ============================================================
     function renderPaymentOptions() {
         const container = document.getElementById('payment-list');
@@ -295,7 +301,7 @@
     }
 
     // ============================================================
-    // 5. RENDER TESTIMONI
+    // 6. RENDER TESTIMONI
     // ============================================================
     function renderTestimonials() {
         const container = document.getElementById('testimoni-container');
@@ -367,7 +373,7 @@
     }
 
     // ============================================================
-    // 6. SHOW SECTION
+    // 7. SHOW SECTION — Sembunyikan sticky footer di payment/packed
     // ============================================================
     function showSection(id) {
         Object.keys(sections).forEach(key => {
@@ -390,7 +396,7 @@
     }
 
     // ============================================================
-    // 7. PAYMENT INSTRUCTIONS
+    // 8. PAYMENT INSTRUCTIONS
     // ============================================================
     function getPaymentInstructions(paymentMethod) {
         const instructions = {
@@ -467,11 +473,11 @@
     }
 
     // ============================================================
-    // 8. CHECKOUT
+    // 9. CHECKOUT (dengan prefix +62)
     // ============================================================
     async function handleCheckout() {
         const nama = document.getElementById('full-name').value.trim();
-        // Ambil nomor HP dari input (tanpa prefix +62)
+        // Ambil nilai dari input (tanpa prefix +62, karena prefix sudah di HTML)
         let noHp = document.getElementById('phone').value.trim();
         const provinsi = document.getElementById('provinsi').value;
         const kabupaten = document.getElementById('kabupaten').value;
@@ -480,11 +486,10 @@
         const destId = document.getElementById('destination-address-id')?.value || '';
 
         if (!nama) { alert('Nama lengkap wajib diisi!'); return; }
-        if (!noHp || noHp.length < 8) { alert('Nomor HP tidak valid!'); return; }
-        if (!kecamatan || !alamat || !destId) { alert('Harap pilih kecamatan dari daftar dan isi alamat lengkap!'); return; }
-
-        // Bersihkan nomor HP (hapus non-digit)
+        // Hapus karakter non-digit, tapi pertahankan awalan 8 (karena sudah tanpa 0)
         noHp = noHp.replace(/\D/g, '');
+        if (noHp.length < 8 || noHp.length > 15) { alert('Nomor HP tidak valid (minimal 8 digit)!'); return; }
+        if (!kecamatan || !alamat || !destId) { alert('Harap pilih kecamatan dari daftar dan isi alamat lengkap!'); return; }
 
         const qty = currentQty;
         const subtotal = getDiscountedPrice(qty);
@@ -496,7 +501,7 @@
         try {
             const payload = {
                 customerName: nama,
-                customerPhone: noHp,
+                customerPhone: noHp, // kirim tanpa 0 di depan (contoh: 8123456789)
                 province: provinsi,
                 city: kabupaten,
                 district: kecamatan,
@@ -550,10 +555,9 @@
     }
 
     // ============================================================
-    // 9. SHOW PAYMENT PAGE (dengan localStorage)
+    // 10. SHOW PAYMENT PAGE (dengan localStorage)
     // ============================================================
     function showPaymentPage(cashiResp, orderData) {
-        // Simpan ke sessionStorage agar bisa di-restore saat refresh
         try {
             sessionStorage.setItem('pendingPayment', JSON.stringify({
                 orderId: orderData.orderId,
@@ -575,7 +579,6 @@
         let html = `<p><strong>Total:</strong> Rp ${totalBayar.toLocaleString()}</p>`;
         html += `<p><strong>Order ID:</strong> ${orderData.orderId}</p>`;
 
-        // Tampilkan QR/VA/Retail
         if (cashiResp.qrUrl) {
             html += `<p>Scan QRIS:</p><img src="${cashiResp.qrUrl}" style="max-width:200px;display:block;margin:10px auto;border-radius:10px;"/>`;
         } else if (cashiResp.va_number) {
@@ -586,7 +589,6 @@
             html += `<pre>${JSON.stringify(cashiResp, null, 2)}</pre>`;
         }
 
-        // Tambahkan tata cara bayar
         const steps = getPaymentInstructions(orderData.metodeBayar);
         html += `<div style="margin-top:16px; padding-top:12px; border-top:1px solid #eee;">
             <p style="font-weight:600; margin-bottom:8px;">📌 Cara Bayar:</p>
@@ -603,11 +605,10 @@
         }
         if (waBtn) waBtn.style.display = 'none';
 
-        // Hentikan polling sebelumnya
         if (paymentPollTimer) clearInterval(paymentPollTimer);
 
         let pollCount = 0;
-        const maxPolls = 30; // 30 x 10 detik = 5 menit
+        const maxPolls = 30;
         paymentPollTimer = setInterval(async () => {
             pollCount++;
             try {
@@ -653,7 +654,7 @@
     }
 
     // ============================================================
-    // 10. SHOW PACKED PAGE (tanpa tombol konfirmasi)
+    // 11. SHOW PACKED PAGE (tanpa tombol konfirmasi)
     // ============================================================
     function showPackedPage(data) {
         showSection('packed');
@@ -673,59 +674,24 @@
         if (btnWa) {
             btnWa.onclick = () => {
                 const pesan = `Halo ${data.nama},\n\nPesanan Anda (${data.orderId}) sudah dikemas.\nResi: ${data.resi || '-'}\nTotal: Rp ${data.totalHarga.toLocaleString()}\nKurir: ${data.kurir}\n\nTerima kasih!`;
-                const url = `https://wa.me/${data.noHp}?text=${encodeURIComponent(pesan)}`;
+                const url = `https://wa.me/${data.noHp.replace(/^0+/, '')}?text=${encodeURIComponent(pesan)}`;
                 window.open(url, '_blank');
             };
         }
 
-        // Tombol konfirmasi sudah dihapus dari HTML
+        // ===== TOMBOL KONFIRMASI SUDAH DIHAPUS DARI HTML =====
 
         document.getElementById('btn-back-home-packed').onclick = () => {
             sessionStorage.removeItem('pendingPayment');
             showSection('landing');
         };
-
-        // Jika NON-COD, polling resi (tapi tombol konfirmasi sudah hilang)
-        if (!data.isCOD) {
-            pollResiAndUpdate(data.orderId);
-        }
     }
 
     // ============================================================
-    // 11. POLLING RESI (untuk NON-COD)
-    // ============================================================
-    async function pollResiAndUpdate(orderId) {
-        let attempts = 0;
-        const maxAttempts = 30; // 30 x 5 detik = 150 detik (2.5 menit)
-        const interval = setInterval(async () => {
-            attempts++;
-            try {
-                const res = await fetch(`${CONFIG.API_BASE_URL}/check-status?orderId=${orderId}`);
-                const json = await res.json();
-                if (json.success && json.paymentStatus === 'PAID' && json.cnoteNo && json.cnoteNo !== '-') {
-                    // Resi sudah ada, update halaman
-                    const resiEl = document.getElementById('packed-resi');
-                    if (resiEl) resiEl.textContent = json.cnoteNo;
-                    clearInterval(interval);
-                    // Ubah status badge
-                    const badge = document.querySelector('.badge');
-                    if (badge) badge.textContent = 'PAID - RESI READY';
-                } else if (attempts >= maxAttempts) {
-                    clearInterval(interval);
-                }
-            } catch (e) {
-                console.warn('Polling resi error:', e);
-            }
-        }, 5000);
-    }
-
-    // ============================================================
-    // 12. HANDLE TRACKING (di landing page)
+    // 12. HANDLE TRACKING
     // ============================================================
     async function handleTracking() {
-        // Ambil nomor HP dari input tracking (tanpa prefix)
-        const raw = document.getElementById('track-phone').value.trim();
-        const noHp = raw.replace(/\D/g, '');
+        const noHp = document.getElementById('track-phone').value.trim();
         if (!noHp) {
             alert('Masukkan No HP!');
             return;
@@ -896,9 +862,7 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         const restored = restorePendingPayment();
-        if (restored) {
-            return;
-        }
+        if (restored) return;
 
         loadConfig();
 
@@ -958,7 +922,7 @@
             btnCheckout2.addEventListener('click', handleCheckout);
         }
 
-        // LACAK
+        // TOMBOL LACAK
         const btnTrack = document.getElementById('btn-track');
         if (btnTrack) {
             btnTrack.addEventListener('click', function(e) {
