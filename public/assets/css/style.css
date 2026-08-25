@@ -1,6 +1,7 @@
 /* ============================================================
-   SPRAY TIDUR — style.css
+   SPRAY TIDUR — style.css (FULL)
    Landing page mobile-first dengan tema putih & hijau
+   Semua fitur: prefix +62, timeline, order list, voucher coretan
    ============================================================ */
 
 * {
@@ -111,6 +112,7 @@ body {
     font-size: 12px;
     color: #999;
     text-decoration: line-through;
+    display: none; /* default hidden, muncul kalau voucher dipakai */
 }
 
 .footer-price-discount {
@@ -373,6 +375,46 @@ body {
 .search-result-item .result-detail {
     font-size: 11px;
     color: #999;
+}
+
+/* ===== PHONE WRAPPER (prefix +62) ===== */
+.phone-wrapper {
+    display: flex;
+    align-items: center;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: 0.2s;
+}
+.phone-wrapper:focus-within {
+    border-color: #4CAF50;
+}
+.phone-prefix {
+    padding: 12px 8px 12px 14px;
+    background: #f0f0f0;
+    font-weight: 600;
+    color: #1a1a1a;
+    border-right: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.phone-wrapper input {
+    border: none !important;
+    padding: 12px 14px !important;
+    margin: 0 !important;
+    flex: 1;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+.phone-wrapper input:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* ===== PAYMENT & COURIER (1 baris 1 pilihan dengan icon) ===== */
@@ -768,94 +810,225 @@ body {
     display: flex;
     gap: 10px;
     margin: 16px 0;
+    align-items: center;
 }
 
-.tracking-form input {
+.tracking-form .phone-wrapper {
     flex: 1;
-    padding: 12px 16px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    font-size: 14px;
+    margin: 0;
 }
 
 .tracking-form .btn-primary {
     padding: 12px 20px;
     font-size: 15px;
     flex-shrink: 0;
+    border-radius: 12px;
 }
 
 .tracking-result {
     margin-top: 20px;
 }
 
+/* ===== ORDER LIST ITEM (kotak) ===== */
+.order-list-item {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.order-list-item:hover {
+    border-color: #4CAF50;
+    background: #f9fcf9;
+}
+.order-list-item .oid {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+.order-list-item .meta {
+    font-size: 13px;
+    color: #666;
+    margin-top: 2px;
+}
+.order-list-item .status-chip {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 30px;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.order-list-item .status-chip.pending {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+/* ===== TRACKING DETAIL ===== */
 .tracking-item {
     background: #f8f9fa;
     padding: 16px;
     border-radius: 16px;
     margin-bottom: 12px;
-    border: 1.5px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e0e0e0;
 }
 
-.tracking-item p {
-    margin-bottom: 4px;
-}
-
-.tracking-progress {
+/* ===== TIMELINE (bulatan & garis) ===== */
+.timeline {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin: 14px 0 6px;
     position: relative;
+    margin: 24px 0 12px;
+    padding: 0 8px;
 }
-
-.tracking-progress::before {
+.timeline::before {
     content: '';
     position: absolute;
-    top: 50%;
+    top: 18px;
     left: 12%;
     right: 12%;
-    height: 3px;
+    height: 4px;
     background: #ddd;
     z-index: 0;
-    transform: translateY(-50%);
+    border-radius: 2px;
 }
-
-.tracking-step {
+.tl-progress {
+    position: absolute;
+    top: 18px;
+    left: 12%;
+    height: 4px;
+    background: #4CAF50;
+    z-index: 1;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+.tl-step {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 1;
-    background: #fff;
-    padding: 0 4px;
+    width: 33%;
 }
-
-.tracking-step .step-icon {
-    width: 32px;
-    height: 32px;
+.tl-dot {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: #ddd;
+    background: #fff;
+    border: 3px solid #ddd;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 14px;
+    font-size: 16px;
     transition: 0.3s;
 }
-
-.tracking-step.done .step-icon {
+.tl-step.done .tl-dot {
+    border-color: #4CAF50;
     background: #4CAF50;
+    color: #fff;
 }
-
-.tracking-step .step-label {
-    font-size: 10px;
-    margin-top: 4px;
+.tl-step.current .tl-dot {
+    border-color: #4CAF50;
+    background: #fff;
+    color: #4CAF50;
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+}
+.tl-label {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 6px;
     color: #666;
 }
-
-.tracking-step.done .step-label {
-    font-weight: 600;
+.tl-step.done .tl-label,
+.tl-step.current .tl-label {
     color: #1a1a1a;
+    font-weight: 700;
+}
+
+/* ===== WAITING PAYMENT BOX ===== */
+.waiting-payment-box {
+    text-align: center;
+    padding: 22px 10px;
+    background: #FFF8E8;
+    border-radius: 12px;
+    margin: 18px 0;
+}
+.waiting-payment-box .wp-icon {
+    font-size: 30px;
+    margin-bottom: 6px;
+}
+.waiting-payment-box .wp-title {
+    font-weight: 800;
+    font-size: 16px;
+    color: #A66A00;
+}
+.waiting-payment-box .wp-sub {
+    font-size: 12.5px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* ===== RESI BOX ===== */
+.resi-box {
+    text-align: center;
+    background: #e8f5e9;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+}
+.resi-box .k {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #666;
+}
+.resi-box .v {
+    font-weight: 800;
+    font-size: 18px;
+    margin-top: 4px;
+    color: #1a1a1a;
+    word-break: break-all;
+}
+
+/* ===== WA BUTTON ===== */
+.wa-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: #25D366;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-weight: 800;
+    font-size: 14.5px;
+    margin-top: 10px;
+    transition: 0.2s;
+}
+.wa-btn:hover {
+    opacity: 0.9;
+}
+.wa-btn .icon-box {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.wa-btn .icon-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 /* ===== NOTIFIKASI POPUP ===== */
@@ -928,48 +1101,37 @@ body {
     }
 }
 
-/* ===== ORDER LIST (untuk tracking) ===== */
-.order-list-item {
-    border: 1.5px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
+/* ===== FORM MSG ===== */
+.form-msg {
+    font-size: 13.5px;
+    color: #d32f2f;
+    margin-top: 10px;
+    display: none;
+}
+.form-msg.show {
+    display: block;
+}
+
+/* ===== CARD ===== */
+.card {
     background: #fff;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-
-.order-list-item:hover {
-    border-color: #4CAF50;
-    background: #f9fcf9;
+.card + .card {
+    margin-top: 12px;
 }
-
-.order-list-item .oid {
+.section-title {
+    font-size: 19px;
     font-weight: 700;
-    font-size: 14px;
-    color: #1a1a1a;
+    margin: 0 0 4px;
 }
-
-.order-list-item .meta {
+.section-sub {
     font-size: 13px;
     color: #666;
-    margin-top: 2px;
-}
-
-.order-list-item .status-chip {
-    display: inline-block;
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 30px;
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-
-.order-list-item .status-chip.pending {
-    background: #fff3e0;
-    color: #e65100;
+    margin: 0 0 14px;
 }
 
 /* ===== RESPONSIVE TWEAKS ===== */
@@ -993,4 +1155,33 @@ body {
         width: 28px;
         height: 28px;
     }
+    .tracking-form {
+        flex-direction: column;
+    }
+    .tracking-form .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+    .phone-prefix {
+        font-size: 12px;
+        padding: 10px 6px 10px 10px;
+    }
+    .phone-wrapper input {
+        padding: 10px 10px !important;
+        font-size: 13px;
+    }
+}
+
+/* ===== UTILITY ===== */
+.text-center {
+    text-align: center;
+}
+.mt-8 {
+    margin-top: 8px;
+}
+.mt-16 {
+    margin-top: 16px;
+}
+.hidden {
+    display: none !important;
 }
