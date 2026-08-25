@@ -11,74 +11,98 @@
 </head>
 <body>
 
+    <!-- ====== HEADER ====== -->
     <header class="main-header">
         <div class="header-left">
-            <a href="./index.html" class="header-home"><i class="fas fa-home"></i> Beranda</a>
+            <a href="./index.html" class="header-home" id="btn-home"><i class="fas fa-home"></i> Beranda</a>
         </div>
         <div class="header-center">
-            <span class="header-brand">Lacak Pesanan</span>
+            <span class="header-brand">Spray Tidur</span>
         </div>
         <div class="header-right">
-            <a href="./index.html" class="header-track"><i class="fas fa-shopping-cart"></i> Belanja</a>
+            <button id="btn-track-header" class="header-track" onclick="window.location.href='./tracking.html'"><i class="fas fa-box"></i> Lacak</button>
         </div>
     </header>
 
-    <div class="container" style="padding-top:20px;">
+    <!-- ====== MAIN ====== -->
+    <div class="container">
 
-        <!-- LAYAR 1: Input Nomor HP -->
-        <div class="card" id="search-card">
-            <h2 style="font-size:18px;margin-bottom:8px;">📦 Lacak Pesanan</h2>
-            <p style="font-size:13px;color:#666;margin-bottom:16px;">Masukkan nomor HP yang kamu pakai waktu checkout.</p>
-            <div class="track-search">
-                <input type="tel" id="phone-input" placeholder="081234567890" style="flex:1;padding:12px 16px;border:1px solid #ddd;border-radius:12px;font-size:14px;" />
-                <button id="search-btn" class="btn-primary" style="padding:12px 20px;">Cari</button>
-            </div>
-            <div class="form-msg" id="search-msg" style="display:none;color:red;margin-top:10px;"></div>
-        </div>
-
-        <!-- LAYAR 2: Daftar Pesanan -->
-        <div class="card" id="order-list-card" style="display:none;">
-            <h2 style="font-size:18px;margin-bottom:8px;">Pesanan Ditemukan</h2>
-            <p style="font-size:13px;color:#666;margin-bottom:16px;">Pilih salah satu pesanan untuk lihat detail statusnya.</p>
-            <div id="order-list"></div>
-            <button id="back-to-search" class="voucher-btn" style="margin-top:12px;width:100%;">← Cari nomor lain</button>
-        </div>
-
-        <!-- LAYAR 3: Detail Status -->
-        <div id="detail-card" style="display:none;">
+        <!-- LAYAR 1: input nomor HP -->
+        <section id="search-card" class="section active">
             <div class="card">
-                <button id="back-to-list" class="voucher-btn" style="margin-top:0;margin-bottom:14px;width:100%;">← Kembali ke daftar</button>
-                <h2 style="font-size:18px;margin-bottom:4px;">Status Pesanan</h2>
-                <p style="font-size:13px;color:#666;margin-bottom:12px;">Order ID: <strong id="d-order-id">-</strong></p>
+                <h2 class="section-title">📦 Lacak Pesanan</h2>
+                <p class="section-sub">Masukkan nomor HP yang kamu pakai waktu checkout.</p>
+                <div class="tracking-form">
+                    <div class="phone-wrapper">
+                        <span class="phone-prefix">
+                            <img src="./assets/img/flag-id.png" alt="ID" style="width:20px;height:14px;vertical-align:middle;margin-right:4px;" />
+                            +62
+                        </span>
+                        <input type="tel" id="phone-input" placeholder="8123456789" required />
+                    </div>
+                    <button id="search-btn" class="btn-primary"><i class="fas fa-search"></i> Cari</button>
+                </div>
+                <div id="search-msg" class="form-msg" style="display:none;"></div>
+            </div>
+        </section>
 
-                <div id="waiting-payment-box" class="waiting-payment-box" style="display:none;background:#FFF8E8;padding:16px;border-radius:12px;text-align:center;">
-                    <div style="font-size:30px;">⏳</div>
-                    <div style="font-weight:800;font-size:16px;color:#A66A00;">Menunggu Pembayaran</div>
-                    <div style="font-size:13px;color:#666;">Pesanan akan langsung diproses & dikemas begitu pembayaranmu terkonfirmasi.</div>
+        <!-- LAYAR 2: daftar pesanan -->
+        <section id="order-list-card" class="section" style="display:none;">
+            <div class="card">
+                <h2 class="section-title">Pesanan Ditemukan</h2>
+                <p class="section-sub">Pilih salah satu pesanan untuk lihat detail statusnya.</p>
+                <div id="order-list"></div>
+                <button id="back-to-search" class="voucher-btn">← Cari nomor lain</button>
+            </div>
+        </section>
+
+        <!-- LAYAR 3: detail status -->
+        <section id="detail-card" class="section" style="display:none;">
+            <div class="card">
+                <button id="back-to-list" class="voucher-btn" style="margin-top:0; margin-bottom:14px;">← Kembali ke daftar</button>
+                <h2 class="section-title">Status Pesanan</h2>
+                <p class="section-sub">Order ID: <strong id="d-order-id">-</strong></p>
+
+                <!-- WAITING PAYMENT -->
+                <div id="waiting-payment-box" class="waiting-payment-box" style="display:none;">
+                    <div class="wp-icon">⏳</div>
+                    <div class="wp-title">Menunggu Pembayaran</div>
+                    <div class="wp-sub">Pesanan akan langsung diproses & dikemas begitu pembayaranmu terkonfirmasi.</div>
                 </div>
 
+                <!-- TIMELINE -->
                 <div id="timeline-box">
                     <div class="timeline" id="timeline">
                         <div class="tl-progress" id="tl-progress" style="width:0%;"></div>
-                        <div class="tl-step" id="tl-step-1"><div class="tl-dot">📦</div><div class="tl-label">Dikemas</div></div>
-                        <div class="tl-step" id="tl-step-2"><div class="tl-dot">🚚</div><div class="tl-label">Dikirim</div></div>
-                        <div class="tl-step" id="tl-step-3"><div class="tl-dot">🏠</div><div class="tl-label">Diterima</div></div>
+                        <div class="tl-step" id="tl-step-1">
+                            <div class="tl-dot">📦</div>
+                            <div class="tl-label">Dikemas</div>
+                        </div>
+                        <div class="tl-step" id="tl-step-2">
+                            <div class="tl-dot">🚚</div>
+                            <div class="tl-label">Dikirim</div>
+                        </div>
+                        <div class="tl-step" id="tl-step-3">
+                            <div class="tl-dot">🏠</div>
+                            <div class="tl-label">Diterima</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="resi-box" style="background:#f1f8e9;padding:12px;border-radius:12px;text-align:center;margin:12px 0;">
-                    <div style="font-size:11px;text-transform:uppercase;color:#666;">Nomor Resi</div>
-                    <div style="font-weight:800;font-size:18px;" id="d-resi">-</div>
+                <div class="resi-box">
+                    <div class="k">Nomor Resi</div>
+                    <div class="v" id="d-resi">-</div>
                 </div>
 
                 <div class="summary-row"><span id="d-product">-</span><span id="d-total">-</span></div>
                 <div class="summary-row"><span>Metode Bayar</span><span id="d-payment">-</span></div>
 
-                <a href="#" id="d-wa-btn" class="btn-success" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;text-decoration:none;padding:12px;border-radius:12px;">
-                    <i class="fab fa-whatsapp"></i> Chat Admin soal Pesanan Ini
+                <a href="#" id="d-wa-btn" class="wa-btn" target="_blank" rel="noopener">
+                    <span class="icon-box"><img src="./assets/img/wa-icon.png" alt="" onerror="this.parentElement.innerHTML='💬';" /></span>
+                    Chat Admin soal Pesanan Ini
                 </a>
             </div>
-        </div>
+        </section>
 
     </div>
 
