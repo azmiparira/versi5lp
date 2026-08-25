@@ -50,16 +50,13 @@ module.exports = async (req, res) => {
       });
     }
 
-    // ===== NOMOR HP: simpan sebagai STRING dengan leading zero =====
+    // Nomor HP: simpan sebagai string dengan leading zero
     let rawPhone = String(customerPhone).trim();
-    // Hapus karakter non-digit, tapi TETAP simpan leading zero
-    // Kita simpan raw phone number (bisa mulai 0)
     const cleanPhone = rawPhone.replace(/\D/g, '');
     if (cleanPhone.length < 8 || cleanPhone.length > 15) {
       return res.status(400).json({ success: false, message: 'Nomor HP tidak valid' });
     }
-    // Simpan dengan format asli (dengan 0 di depan)
-    const phoneForSheet = cleanPhone; // ini string, akan tetap 0 di depan
+    const phoneForSheet = cleanPhone; // string, leading zero tetap
 
     if (!PICKUP_ADDRESS_ID) {
       return res.status(500).json({
@@ -74,7 +71,7 @@ module.exports = async (req, res) => {
     const orderId = generateOrderId();
     const fullAddress = `${addressDetail}, ${subdistrict}, ${district}, ${city}, ${province}`;
 
-    // ===== HITUNG ONGKIR =====
+    // Hitung ongkir
     const useVoucherBool = useVoucher === true || useVoucher === 'true';
     const shippingFee = useVoucherBool ? 0 : ONGKIR;
     const totalPrice = pricing.totalDiscounted + shippingFee;
@@ -83,7 +80,7 @@ module.exports = async (req, res) => {
       order_id: orderId,
       created_at: new Date().toISOString(),
       customer_name: customerName,
-      customer_phone: phoneForSheet, // SIMPAN SEBAGAI STRING!
+      customer_phone: phoneForSheet,
       full_address: fullAddress,
       destination_address_id: destinationAddressId,
       product_name: PRODUCT_NAME,
@@ -106,7 +103,7 @@ module.exports = async (req, res) => {
         pickup: { type: 'dropOff', address_id: PICKUP_ADDRESS_ID },
         orders: [{
           goodsValue: pricing.totalDiscounted,
-          COD: totalPrice, // COD = total termasuk ongkir
+          COD: totalPrice,
           customerAddress: fullAddress,
           customerName: customerName,
           customerAddressDataId: destinationAddressId,
@@ -157,7 +154,6 @@ module.exports = async (req, res) => {
 
     // ===== NON-COD =====
     if (paymentType === 'NONCOD') {
-      // Cari channel config
       const channelConfig = PAYMENT_CHANNELS[paymentChannel];
       if (!channelConfig) {
         return res.status(400).json({
@@ -188,8 +184,13 @@ module.exports = async (req, res) => {
         kodeChannel: kodeChannel,
       });
 
+      // === AMBIL TOTAL AKHIR DARI CASHI ===
+      // Cashi mungkin mengembalikan total_amount (sudah termasuk fee)
+      const finalTotal = cashiResult.total_amount || totalPrice;
+
       await createOrderRow({
         ...baseRow,
+        total_price: finalTotal, // update dengan total dari Cashi
         payment_status: 'PENDING',
         cashi_order_id: orderId,
         cashi_checkout_url: cashiResult.checkout_url || '-',
@@ -204,10 +205,13 @@ module.exports = async (req, res) => {
         success: true,
         orderId,
         paymentType: 'NONCOD',
-        totalPrice: totalPrice,
+        totalPrice: finalTotal, // kirim finalTotal ke frontend
         shippingFee: shippingFee,
         useVoucher: useVoucherBool,
-        payment: cashiResult,
+        payment: {
+          ...cashiResult,
+          total_amount: finalTotal, // pastikan total_amount terisi
+        },
       });
     }
 
