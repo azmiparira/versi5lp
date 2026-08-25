@@ -1,12 +1,11 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
-// FULL VERSION — dengan semua fitur
+// FULL VERSION — semua perbaikan
 // ============================================================
 
 (function() {
     'use strict';
 
-    // ===== KONFIGURASI =====
     const CONFIG = {
         API_BASE_URL: '/api',
         WA_ADMIN: '6281932696934',
@@ -15,7 +14,6 @@
         ONGKIR: 15000,
     };
 
-    // ===== DOM REFS =====
     const sections = {
         landing: document.getElementById('section-landing'),
         payment: document.getElementById('section-payment'),
@@ -23,7 +21,6 @@
         tracking: document.getElementById('section-tracking'),
     };
 
-    // ===== STATE =====
     let currentQty = 1;
     let shippingFee = CONFIG.ONGKIR;
     let voucherUsed = false;
@@ -31,10 +28,9 @@
     let productPrice = CONFIG.HARGA_PER_PCS;
     let selectedPayment = 'COD';
     let selectedCourier = 'Direkomendasikan';
+    let isConfigLoaded = false;
 
-    // ============================================================
-    // 1. FUNGSI HARGA
-    // ============================================================
+    // ===== HARGA =====
     function getDiscountedPrice(qty) {
         let disc = 0;
         if (qty === 1) disc = 0;
@@ -53,34 +49,50 @@
         const shipping = voucherUsed ? 0 : shippingFee;
         const total = finalTotal + shipping;
 
-        // Update semua elemen harga
+        // Harga asli (coret)
         const priceOriginal = document.getElementById('price-original');
-        const priceDiscount = document.getElementById('price-discount');
-        const qtyDisplay = document.getElementById('qty-display');
-        const summarySubtotal = document.getElementById('summary-subtotal');
-        const summaryShipping = document.getElementById('summary-shipping');
-        const summaryTotal = document.getElementById('summary-total');
-        const footerOriginal = document.getElementById('footer-original');
-        const footerDiscount = document.getElementById('footer-discount');
+        if (priceOriginal) {
+            priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+        }
 
-        if (priceOriginal) priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
-        if (priceDiscount) priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
+        // Harga diskon
+        const priceDiscount = document.getElementById('price-discount');
+        if (priceDiscount) {
+            priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
+        }
+
+        // Qty display
+        const qtyDisplay = document.getElementById('qty-display');
         if (qtyDisplay) qtyDisplay.textContent = qty;
+
+        // Subtotal
+        const summarySubtotal = document.getElementById('summary-subtotal');
         if (summarySubtotal) summarySubtotal.textContent = 'Rp ' + finalTotal.toLocaleString();
+
+        // Ongkir
+        const summaryShipping = document.getElementById('summary-shipping');
         if (summaryShipping) {
             summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
         }
+
+        // Total
+        const summaryTotal = document.getElementById('summary-total');
         if (summaryTotal) summaryTotal.innerHTML = '<strong>Rp ' + total.toLocaleString() + '</strong>';
-        // Footer: harga coret = harga asli (ORIGINAL TOTAL), harga diskon = total setelah diskon+ongkir
+
+        // Footer: harga asli (coret) dan harga total
+        const footerOriginal = document.getElementById('footer-original');
         if (footerOriginal) footerOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+
+        const footerDiscount = document.getElementById('footer-discount');
         if (footerDiscount) footerDiscount.textContent = 'Rp ' + total.toLocaleString();
 
-        // Sticky footer
+        // Sticky
         const stickyPrice = document.getElementById('sticky-price');
-        const stickyStrike = document.getElementById('sticky-strike');
         if (stickyPrice) stickyPrice.textContent = 'Rp ' + total.toLocaleString();
+
+        const stickyStrike = document.getElementById('sticky-strike');
         if (stickyStrike) {
-            if (originalTotal > finalTotal || voucherUsed) {
+            if (originalTotal > finalTotal) {
                 stickyStrike.style.display = 'block';
                 stickyStrike.textContent = 'Rp ' + originalTotal.toLocaleString();
             } else {
@@ -89,130 +101,7 @@
         }
     }
 
-    // ============================================================
-    // 2. QTY CONTROL
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load config dari backend
-        loadConfig();
-
-        // QTY
-        const btnMinus = document.getElementById('btn-minus');
-        const btnPlus = document.getElementById('btn-plus');
-
-        if (btnMinus) {
-            btnMinus.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (currentQty > 1) {
-                    currentQty--;
-                    updatePriceDisplay();
-                }
-            });
-        }
-
-        if (btnPlus) {
-            btnPlus.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (currentQty < 5) {
-                    currentQty++;
-                    updatePriceDisplay();
-                } else {
-                    alert('Maksimal pembelian 5 pcs');
-                }
-            });
-        }
-
-        // ===== VOUCHER =====
-        const voucherBtn = document.getElementById('btn-voucher');
-        if (voucherBtn) {
-            voucherBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                voucherUsed = !voucherUsed;
-                if (voucherUsed) {
-                    this.classList.add('used');
-                    this.innerHTML = '<i class="fas fa-check-circle"></i> Voucher Digunakan';
-                } else {
-                    this.classList.remove('used');
-                    this.innerHTML = '<i class="fas fa-ticket-alt"></i> Gunakan Voucher Gratis Ongkir';
-                }
-                updatePriceDisplay();
-            });
-        }
-
-        // ===== SUBMIT ORDER =====
-        const btnCheckout1 = document.getElementById('btn-checkout');
-        const btnCheckout2 = document.getElementById('btn-checkout-footer');
-
-        if (btnCheckout1) {
-            btnCheckout1.addEventListener('click', handleCheckout);
-        }
-        if (btnCheckout2) {
-            btnCheckout2.addEventListener('click', handleCheckout);
-        }
-
-        // ===== TOMBOL LACAK PESANAN (di bawah total) =====
-        const btnTrack = document.getElementById('btn-track');
-        if (btnTrack) {
-            btnTrack.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.href = './tracking.html';
-            });
-        }
-
-        // ===== TRACKING HEADER =====
-        const btnTrackHeader = document.getElementById('btn-track-header');
-        if (btnTrackHeader) {
-            btnTrackHeader.addEventListener('click', function() {
-                window.location.href = './tracking.html';
-            });
-        }
-
-        // ===== TRACKING SUBMIT =====
-        const btnTrackSubmit = document.getElementById('btn-track-submit');
-        if (btnTrackSubmit) {
-            btnTrackSubmit.addEventListener('click', handleTracking);
-        }
-
-        // ===== BACK BUTTONS =====
-        const btnBackHome = document.getElementById('btn-back-home');
-        if (btnBackHome) btnBackHome.addEventListener('click', function() { showSection('landing'); });
-
-        const btnBackHomePacked = document.getElementById('btn-back-home-packed');
-        if (btnBackHomePacked) btnBackHomePacked.addEventListener('click', function() { showSection('landing'); });
-
-        const btnBackHomeTrack = document.getElementById('btn-back-home-track');
-        if (btnBackHomeTrack) btnBackHomeTrack.addEventListener('click', function() { showSection('landing'); });
-
-        // ===== BERANDA HEADER =====
-        const btnHome = document.getElementById('btn-home');
-        if (btnHome) {
-            btnHome.addEventListener('click', function(e) {
-                e.preventDefault();
-                showSection('landing');
-            });
-        }
-
-        // ===== SEARCH KECAMATAN =====
-        initSearchKecamatan();
-
-        // ===== RENDER PAYMENT & COURIER =====
-        renderPaymentOptions();
-        renderCourierOptions();
-
-        // ===== RENDER TESTIMONI =====
-        renderTestimonials();
-
-        // ===== INIT =====
-        updatePriceDisplay();
-        startCountdown();
-        startGimmicks();
-    });
-
-    // ============================================================
-    // 3. LOAD CONFIG DARI BACKEND
-    // ============================================================
+    // ===== LOAD CONFIG =====
     async function loadConfig() {
         try {
             const response = await fetch(`${CONFIG.API_BASE_URL}/config`);
@@ -223,16 +112,18 @@
                 shippingFee = data.freeShippingDisplayValue || CONFIG.ONGKIR;
                 document.getElementById('product-name').textContent = data.productName || 'Spray Tidur';
                 document.getElementById('product-desc').textContent = data.productDescription || '';
+                isConfigLoaded = true;
                 updatePriceDisplay();
             }
         } catch (err) {
             console.warn('Gagal load config:', err);
+            // Pakai default
+            isConfigLoaded = true;
+            updatePriceDisplay();
         }
     }
 
-    // ============================================================
-    // 4. SEARCH KECAMATAN (DENGAN SUBDISTRICT/KELURAHAN)
-    // ============================================================
+    // ===== SEARCH KECAMATAN =====
     function initSearchKecamatan() {
         const searchInput = document.getElementById('kecamatan-search');
         const resultsDiv = document.getElementById('kecamatan-results');
@@ -251,7 +142,6 @@
                     resultsDiv.innerHTML = '';
                     const seen = new Set();
                     json.data.forEach(item => {
-                        // Gunakan SUBDISTRICT_NAME (kelurahan/desa) sebagai label utama
                         const label = item.SUBDISTRICT_NAME || item.DISTRICT_NAME;
                         const district = item.DISTRICT_NAME || '';
                         const city = item.CITY_NAME || '';
@@ -303,9 +193,7 @@
         });
     }
 
-    // ============================================================
-    // 5. RENDER PAYMENT OPTIONS (dengan logo di kiri)
-    // ============================================================
+    // ===== RENDER PAYMENT & COURIER =====
     function renderPaymentOptions() {
         const container = document.getElementById('payment-list');
         if (!container) return;
@@ -345,9 +233,6 @@
         });
     }
 
-    // ============================================================
-    // 6. RENDER COURIER OPTIONS (dengan logo di kiri)
-    // ============================================================
     function renderCourierOptions() {
         const container = document.getElementById('courier-list');
         if (!container) return;
@@ -383,9 +268,7 @@
         });
     }
 
-    // ============================================================
-    // 7. RENDER TESTIMONI (5 testimoni, 3 dengan foto produk)
-    // ============================================================
+    // ===== TESTIMONI =====
     function renderTestimonials() {
         const container = document.getElementById('testimoni-container');
         if (!container) return;
@@ -455,9 +338,7 @@
         });
     }
 
-    // ============================================================
-    // 8. SHOW SECTION
-    // ============================================================
+    // ===== SHOW SECTION =====
     function showSection(id) {
         Object.keys(sections).forEach(key => {
             if (sections[key]) {
@@ -467,12 +348,85 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ============================================================
-    // 9. HANDLE CHECKOUT
-    // ============================================================
+    // ===== PAYMENT INSTRUCTION =====
+    function getPaymentInstructions(paymentMethod, cashiResp) {
+        const instructions = {
+            'QRIS': [
+                'Screenshot kode QR yang tampil',
+                'Masuk ke aplikasi dompet digital (Dana, Gopay, Ovo, Shopeepay, Linkaja, dll)',
+                'Buka Scan QR pada aplikasi dompet digital anda',
+                'Scan QR yang muncul pada halaman pembelian anda',
+                'Akan muncul detail transaksi. Pastikan data transaksi sudah sesuai',
+                'Selesaikan proses pembayaran Anda',
+                'Transaksi selesai. Simpan bukti pembayaran Anda'
+            ],
+            'MANDIRI': [
+                'Buka aplikasi mobile banking Mandiri VA',
+                'Pilih menu Transfer / Virtual Account',
+                'Masukkan nomor Virtual Account yang diberikan',
+                'Masukkan nominal pembayaran',
+                'Pastikan data transaksi sudah sesuai',
+                'Konfirmasi dan selesaikan pembayaran',
+                'Transaksi selesai. Simpan bukti pembayaran Anda'
+            ],
+            'BCA': [
+                'Buka aplikasi mobile banking BCA VA',
+                'Pilih menu Transfer / Virtual Account',
+                'Masukkan nomor Virtual Account yang diberikan',
+                'Masukkan nominal pembayaran',
+                'Pastikan data transaksi sudah sesuai',
+                'Konfirmasi dan selesaikan pembayaran',
+                'Transaksi selesai. Simpan bukti pembayaran Anda'
+            ],
+            'BNI': [
+                'Buka aplikasi mobile banking BNI VA',
+                'Pilih menu Transfer / Virtual Account',
+                'Masukkan nomor Virtual Account yang diberikan',
+                'Masukkan nominal pembayaran',
+                'Pastikan data transaksi sudah sesuai',
+                'Konfirmasi dan selesaikan pembayaran',
+                'Transaksi selesai. Simpan bukti pembayaran Anda'
+            ],
+            'BRI': [
+                'Buka aplikasi mobile banking BRI VA',
+                'Pilih menu Transfer / Virtual Account',
+                'Masukkan nomor Virtual Account yang diberikan',
+                'Masukkan nominal pembayaran',
+                'Pastikan data transaksi sudah sesuai',
+                'Konfirmasi dan selesaikan pembayaran',
+                'Transaksi selesai. Simpan bukti pembayaran Anda'
+            ],
+            'BSI': [
+                'Buka aplikasi mobile banking BSI Virtual Account',
+                'Pilih menu Transfer / Virtual Account',
+                'Masukkan nomor Virtual Account yang diberikan',
+                'Masukkan nominal pembayaran',
+                'Pastikan data transaksi sudah sesuai',
+                'Konfirmasi dan selesaikan pembayaran',
+                'Transaksi selesai. Simpan bukti pembayaran Anda'
+            ],
+            'ALFAMART': [
+                'Datang ke gerai Alfamart, Alfamidi, Dan Dan Mart, Lawson, atau Alfaexpress terdekat',
+                'Sampaikan kepada kasir ingin melakukan pembayaran LINKITA',
+                'Sebutkan kode pembayaran yang diberikan',
+                'Bayar sesuai nominal yang tertera',
+                'Simpan bukti pembayaran Anda'
+            ],
+            'INDOMARET': [
+                'Datang ke gerai Indomaret terdekat',
+                'Sampaikan kepada kasir ingin melakukan pembayaran LINKITA',
+                'Sebutkan kode pembayaran yang diberikan',
+                'Bayar sesuai nominal yang tertera',
+                'Simpan bukti pembayaran Anda'
+            ]
+        };
+        return instructions[paymentMethod] || ['Silakan ikuti petunjuk pembayaran yang diberikan.'];
+    }
+
+    // ===== HANDLE CHECKOUT =====
     async function handleCheckout() {
         const nama = document.getElementById('full-name').value.trim();
-        const noHp = document.getElementById('phone').value.trim();
+        let noHp = document.getElementById('phone').value.trim();
         const provinsi = document.getElementById('provinsi').value;
         const kabupaten = document.getElementById('kabupaten').value;
         const kecamatan = document.getElementById('kecamatan').value;
@@ -482,6 +436,9 @@
         if (!nama) { alert('Nama lengkap wajib diisi!'); return; }
         if (!noHp || noHp.length < 8) { alert('Nomor HP tidak valid!'); return; }
         if (!kecamatan || !alamat || !destId) { alert('Harap pilih kecamatan dari daftar dan isi alamat lengkap!'); return; }
+
+        // Hapus karakter non-digit tapi pertahankan leading zero
+        noHp = noHp.replace(/\D/g, '');
 
         const qty = currentQty;
         const subtotal = getDiscountedPrice(qty);
@@ -493,7 +450,7 @@
         try {
             const payload = {
                 customerName: nama,
-                customerPhone: noHp,
+                customerPhone: noHp, // string dengan leading zero
                 province: provinsi,
                 city: kabupaten,
                 district: kecamatan,
@@ -528,12 +485,11 @@
                 metodeBayar: selectedPayment,
                 resi: result.resi || '-',
                 isCOD: isCOD,
-                shippingFee: shipping,
-                useVoucher: voucherUsed,
+                shippingFee: result.shippingFee || shipping,
+                useVoucher: result.useVoucher || voucherUsed,
             };
 
             if (isCOD) {
-                // COD langsung ke packed
                 showPackedPage(currentOrderData);
             } else {
                 if (result.payment) {
@@ -547,130 +503,46 @@
         }
     }
 
-    // ============================================================
-    // 10. SHOW PAYMENT PAGE (dengan steps/tutorial)
-    // ============================================================
+    // ===== SHOW PAYMENT PAGE =====
     function showPaymentPage(cashiResp, orderData) {
         showSection('payment');
         const instr = document.getElementById('payment-instruction');
         const statusDiv = document.getElementById('payment-status');
         const waBtn = document.getElementById('btn-wa-payment');
 
-        // Tampilkan info dasar
         let html = `<p><strong>Total:</strong> Rp ${orderData.totalHarga.toLocaleString()}</p>`;
         html += `<p><strong>Order ID:</strong> ${orderData.orderId}</p>`;
 
-        // Tampilkan QR/VA/Retail + steps
+        // Tampilkan QR/VA/Retail
         if (cashiResp.qrUrl) {
-            html += `<div class="qr-box"><img src="${cashiResp.qrUrl}" style="max-width:220px;display:block;margin:10px auto;border-radius:10px;border:1px solid #ddd;"/></div>`;
-            html += `<div class="payment-steps"><p><strong>Cara Bayar QRIS:</strong></p><ol>
-                <li>Screenshot kode QR yang tampil</li>
-                <li>Masuk ke aplikasi dompet digital (Dana, Gopay, Ovo, Shopeepay, Linkaja, dll)</li>
-                <li>Buka Scan QR pada aplikasi dompet digital anda</li>
-                <li>Scan QR yang muncul pada halaman pembelian anda</li>
-                <li>Akan muncul detail transaksi. Pastikan data transaksi sudah sesuai</li>
-                <li>Selesaikan proses pembayaran Anda</li>
-                <li>Transaksi selesai. Simpan bukti pembayaran Anda</li>
-            </ol></div>`;
+            html += `<p>Scan QRIS:</p><img src="${cashiResp.qrUrl}" style="max-width:200px;display:block;margin:10px auto;border-radius:10px;"/>`;
         } else if (cashiResp.va_number) {
-            const bankName = cashiResp.bank_name || cashiResp.bank || 'Virtual Account';
-            html += `<div class="va-box" style="background:#1a1a2e;color:#fff;border-radius:12px;padding:16px;margin:12px 0;">
-                <div style="font-size:12px;text-transform:uppercase;color:#9FE6B8;font-weight:700;">${bankName}</div>
-                <div style="font-size:22px;font-weight:700;font-family:monospace;margin:6px 0;word-break:break-all;">${cashiResp.va_number}</div>
-                <button onclick="navigator.clipboard?.writeText('${cashiResp.va_number}')" style="background:#4CAF50;color:#fff;border:none;border-radius:30px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer;">Salin Nomor VA</button>
-            </div>`;
-            // Steps sesuai bank
-            let steps = [];
-            if (bankName.includes('BCA')) {
-                steps = [
-                    'Buka aplikasi mobile banking BCA',
-                    'Pilih menu Transfer / Virtual Account',
-                    'Masukkan nomor Virtual Account yang diberikan',
-                    'Masukkan nominal pembayaran',
-                    'Pastikan data transaksi sudah sesuai',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Transaksi selesai. Simpan bukti pembayaran Anda'
-                ];
-            } else if (bankName.includes('Mandiri')) {
-                steps = [
-                    'Buka aplikasi mobile banking Mandiri',
-                    'Pilih menu Transfer / Virtual Account',
-                    'Masukkan nomor Virtual Account yang diberikan',
-                    'Masukkan nominal pembayaran',
-                    'Pastikan data transaksi sudah sesuai',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Transaksi selesai. Simpan bukti pembayaran Anda'
-                ];
-            } else if (bankName.includes('BNI')) {
-                steps = [
-                    'Buka aplikasi mobile banking BNI',
-                    'Pilih menu Transfer / Virtual Account',
-                    'Masukkan nomor Virtual Account yang diberikan',
-                    'Masukkan nominal pembayaran',
-                    'Pastikan data transaksi sudah sesuai',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Transaksi selesai. Simpan bukti pembayaran Anda'
-                ];
-            } else if (bankName.includes('BRI')) {
-                steps = [
-                    'Buka aplikasi mobile banking BRI',
-                    'Pilih menu Transfer / Virtual Account',
-                    'Masukkan nomor Virtual Account yang diberikan',
-                    'Masukkan nominal pembayaran',
-                    'Pastikan data transaksi sudah sesuai',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Transaksi selesai. Simpan bukti pembayaran Anda'
-                ];
-            } else if (bankName.includes('BSI')) {
-                steps = [
-                    'Buka aplikasi mobile banking BSI',
-                    'Pilih menu Transfer / Virtual Account',
-                    'Masukkan nomor Virtual Account yang diberikan',
-                    'Masukkan nominal pembayaran',
-                    'Pastikan data transaksi sudah sesuai',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Transaksi selesai. Simpan bukti pembayaran Anda'
-                ];
-            } else {
-                steps = [
-                    'Buka aplikasi mobile banking anda',
-                    'Pilih menu Transfer / Virtual Account',
-                    'Masukkan nomor Virtual Account yang diberikan',
-                    'Masukkan nominal pembayaran',
-                    'Pastikan data transaksi sudah sesuai',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Transaksi selesai. Simpan bukti pembayaran Anda'
-                ];
-            }
-            html += `<div class="payment-steps"><p><strong>Cara Bayar Virtual Account:</strong></p><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
+            html += `<p><strong>Virtual Account:</strong> ${cashiResp.va_number}</p><p><strong>Bank:</strong> ${cashiResp.bank_name || cashiResp.bank}</p>`;
         } else if (cashiResp.payment_code) {
-            const retailName = cashiResp.retail_name || cashiResp.retail_code || 'Retail';
-            html += `<div class="va-box" style="background:#1a1a2e;color:#fff;border-radius:12px;padding:16px;margin:12px 0;">
-                <div style="font-size:12px;text-transform:uppercase;color:#9FE6B8;font-weight:700;">${retailName}</div>
-                <div style="font-size:22px;font-weight:700;font-family:monospace;margin:6px 0;word-break:break-all;">${cashiResp.payment_code}</div>
-                <button onclick="navigator.clipboard?.writeText('${cashiResp.payment_code}')" style="background:#4CAF50;color:#fff;border:none;border-radius:30px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer;">Salin Kode Bayar</button>
-            </div>`;
-            const retailSteps = [
-                `Datang ke gerai ${retailName} terdekat`,
-                'Sampaikan kepada kasir ingin melakukan pembayaran',
-                'Sebutkan kode pembayaran yang diberikan',
-                'Bayar sesuai nominal yang tertera',
-                'Simpan bukti pembayaran Anda'
-            ];
-            html += `<div class="payment-steps"><p><strong>Cara Bayar Retail:</strong></p><ol>${retailSteps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
+            html += `<p><strong>Kode Pembayaran:</strong> ${cashiResp.payment_code}</p><p><strong>Retail:</strong> ${cashiResp.retail_name || cashiResp.retail_code}</p>`;
         } else {
             html += `<pre>${JSON.stringify(cashiResp, null, 2)}</pre>`;
         }
 
+        // === TAMBAHKAN TATA CARA PEMBAYARAN ===
+        const steps = getPaymentInstructions(orderData.metodeBayar, cashiResp);
+        html += `<div style="margin-top:16px; padding-top:12px; border-top:1px solid #eee;">
+            <p style="font-weight:600; margin-bottom:8px;">📌 Cara Bayar:</p>
+            <ol style="padding-left:20px; font-size:13px; line-height:1.8;">`;
+        steps.forEach(step => {
+            html += `<li>${step}</li>`;
+        });
+        html += `</ol></div>`;
+
         if (instr) instr.innerHTML = html;
+
         if (statusDiv) {
             statusDiv.innerHTML = `<p>Menunggu pembayaran... (auto-check setiap 10 detik)</p><div class="spinner"></div>`;
         }
         if (waBtn) waBtn.style.display = 'none';
 
-        // Polling 10 detik
         let pollCount = 0;
-        const maxPolls = 30; // 30 x 10 = 5 menit
+        const maxPolls = 30; // 30 x 10 detik = 5 menit
         const interval = setInterval(async () => {
             pollCount++;
             try {
@@ -679,7 +551,7 @@
                 if (result.success && result.paymentStatus === 'PAID') {
                     clearInterval(interval);
                     if (statusDiv) {
-                        statusDiv.innerHTML = `<p style="color:#25D366;font-weight:bold;">✅ Pembayaran berhasil! Silakan lanjutkan.</p>`;
+                        statusDiv.innerHTML = `<p style="color:#25D366;font-weight:bold;">✅ Pembayaran berhasil!</p>`;
                     }
                     if (waBtn) {
                         waBtn.style.display = 'inline-block';
@@ -707,9 +579,7 @@
         document.getElementById('btn-back-home').onclick = () => showSection('landing');
     }
 
-    // ============================================================
-    // 11. SHOW PACKED PAGE
-    // ============================================================
+    // ===== SHOW PACKED PAGE =====
     function showPackedPage(data) {
         showSection('packed');
         const elements = {
@@ -746,9 +616,7 @@
         document.getElementById('btn-back-home-packed').onclick = () => showSection('landing');
     }
 
-    // ============================================================
-    // 12. HANDLE TRACKING
-    // ============================================================
+    // ===== HANDLE TRACKING =====
     async function handleTracking() {
         const noHp = document.getElementById('track-phone').value.trim();
         if (!noHp) {
@@ -804,9 +672,7 @@
         }
     }
 
-    // ============================================================
-    // 13. COUNTDOWN
-    // ============================================================
+    // ===== COUNTDOWN =====
     function startCountdown() {
         let totalSeconds = 1800;
         function updateTimer() {
@@ -823,9 +689,7 @@
         setInterval(updateTimer, 1000);
     }
 
-    // ============================================================
-    // 14. GIMMICKS
-    // ============================================================
+    // ===== GIMMICKS =====
     function startGimmicks() {
         let sold = 10234;
         setInterval(() => {
@@ -895,5 +759,119 @@
         setInterval(showTrustPopup, 10000);
         setTimeout(showTrustPopup, 3000);
     }
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load config dulu sebelum render
+        loadConfig();
+
+        // QTY
+        const btnMinus = document.getElementById('btn-minus');
+        const btnPlus = document.getElementById('btn-plus');
+
+        if (btnMinus) {
+            btnMinus.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentQty > 1) {
+                    currentQty--;
+                    updatePriceDisplay();
+                }
+            });
+        }
+
+        if (btnPlus) {
+            btnPlus.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentQty < 5) {
+                    currentQty++;
+                    updatePriceDisplay();
+                } else {
+                    alert('Maksimal pembelian 5 pcs');
+                }
+            });
+        }
+
+        // VOUCHER
+        const voucherBtn = document.getElementById('btn-voucher');
+        if (voucherBtn) {
+            voucherBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                voucherUsed = !voucherUsed;
+                if (voucherUsed) {
+                    this.classList.add('used');
+                    this.innerHTML = '<i class="fas fa-check-circle"></i> Voucher Digunakan';
+                } else {
+                    this.classList.remove('used');
+                    this.innerHTML = '<i class="fas fa-ticket-alt"></i> Gunakan Voucher Gratis Ongkir';
+                }
+                updatePriceDisplay();
+            });
+        }
+
+        // SUBMIT ORDER
+        const btnCheckout1 = document.getElementById('btn-checkout');
+        const btnCheckout2 = document.getElementById('btn-checkout-footer');
+
+        if (btnCheckout1) {
+            btnCheckout1.addEventListener('click', handleCheckout);
+        }
+        if (btnCheckout2) {
+            btnCheckout2.addEventListener('click', handleCheckout);
+        }
+
+        // TOMBOL LACAK
+        const btnTrack = document.getElementById('btn-track');
+        if (btnTrack) {
+            btnTrack.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = './tracking.html';
+            });
+        }
+
+        const btnTrackHeader = document.getElementById('btn-track-header');
+        if (btnTrackHeader) {
+            btnTrackHeader.addEventListener('click', function() {
+                window.location.href = './tracking.html';
+            });
+        }
+
+        const btnTrackSubmit = document.getElementById('btn-track-submit');
+        if (btnTrackSubmit) {
+            btnTrackSubmit.addEventListener('click', handleTracking);
+        }
+
+        // BACK BUTTONS
+        const btnBackHome = document.getElementById('btn-back-home');
+        if (btnBackHome) btnBackHome.addEventListener('click', function() { showSection('landing'); });
+
+        const btnBackHomePacked = document.getElementById('btn-back-home-packed');
+        if (btnBackHomePacked) btnBackHomePacked.addEventListener('click', function() { showSection('landing'); });
+
+        const btnBackHomeTrack = document.getElementById('btn-back-home-track');
+        if (btnBackHomeTrack) btnBackHomeTrack.addEventListener('click', function() { showSection('landing'); });
+
+        const btnHome = document.getElementById('btn-home');
+        if (btnHome) {
+            btnHome.addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('landing');
+            });
+        }
+
+        // SEARCH
+        initSearchKecamatan();
+
+        // RENDER
+        renderPaymentOptions();
+        renderCourierOptions();
+        renderTestimonials();
+
+        // INIT
+        updatePriceDisplay();
+        startCountdown();
+        startGimmicks();
+    });
 
 })();
