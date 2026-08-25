@@ -10,7 +10,7 @@ const WEBHOOK_SECRET = process.env.CASHI_WEBHOOK_SECRET;
 
 const PAYMENT_CHANNELS = {
   COD: { kode_channel: null, label: 'COD', group: 'COD', min: 0, max: 0 },
-  QRIS: { kode_channel: 'QRIS_CUSTOM', label: 'QRIS', group: 'QRIS', min: 2000, max: 10000000 },
+  QRIS: { kode_channel: 'Ya', label: 'QRIS', group: 'QRIS', min: 2000, max: 10000000 },
   MANDIRI: { kode_channel: 'MANDIRI', label: 'Mandiri VA', group: 'VA', min: 10000, max: 50000000 },
   BCA: { kode_channel: 'BCA', label: 'BCA VA', group: 'VA', min: 10000, max: 50000000 },
   BNI: { kode_channel: 'BNI', label: 'BNI VA', group: 'VA', min: 10000, max: 50000000 },
