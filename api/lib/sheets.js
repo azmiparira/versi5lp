@@ -1,13 +1,10 @@
 // ============================================================
-// api/lib/sheets.js
-// Database via Google Sheets. Tab WAJIB bernama: Orders
-// Dilengkapi dengan retry mechanism & cache
+// api/lib/sheets.js (FIX — tanpa addColumns)
 // ============================================================
 
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
-// ===== HEADER KOLOM (TAMBAH: ongkir & voucher_dipakai) =====
 const ORDER_HEADERS = [
   'order_id',
   'created_at',
@@ -32,21 +29,20 @@ const ORDER_HEADERS = [
   'sudah_dikirim',
   'sudah_diterima',
   'notes',
-  'ongkir',           // ← BARU: biaya ongkir
-  'voucher_dipakai',  // ← BARU: TRUE/FALSE
+  'ongkir',           // ← BARU
+  'voucher_dipakai',  // ← BARU
 ];
 
-// ===== CACHE =====
 let sheetCache = null;
 let sheetCacheTime = 0;
-const CACHE_TTL = 60000; // 1 menit
+const CACHE_TTL = 60000;
 
 function getDoc() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
   const sheetId = process.env.GOOGLE_SHEET_ID;
   if (!email || !key || !sheetId) {
-    throw new Error('Google Sheets belum dikonfigurasi. Cek GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY / GOOGLE_SHEET_ID.');
+    throw new Error('Google Sheets belum dikonfigurasi.');
   }
   const jwt = new JWT({ email, key, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
   return new GoogleSpreadsheet(sheetId, jwt);
@@ -66,22 +62,37 @@ async function getOrdersSheet(retryCount = 0) {
     
     let sheet = doc.sheetsByTitle['Orders'];
     if (!sheet) {
+      // Buat sheet baru dengan semua header
       sheet = await doc.addSheet({
         title: 'Orders',
         headerValues: ORDER_HEADERS,
         gridProperties: { rowCount: 1000, columnCount: ORDER_HEADERS.length + 4 },
       });
+      console.log('✅ Sheet "Orders" baru dibuat dengan header lengkap');
     } else {
-      // Pastikan header sudah lengkap (migrasi kolom baru)
-      await sheet.loadHeaderRow().catch(async () => sheet.setHeaderRow(ORDER_HEADERS));
-      // Cek apakah kolom ongkir & voucher_dipakai ada, jika tidak tambahkan
-      const currentHeaders = sheet.headerValues || [];
-      if (!currentHeaders.includes('ongkir')) {
-        // Tambahkan kolom di akhir
-        const lastCol = sheet.columnCount || currentHeaders.length;
-        await sheet.addColumns(lastCol + 1, ['ongkir']);
-        await sheet.addColumns(lastCol + 2, ['voucher_dipakai']);
-        // Reload header
+      // ===== MIGRASI KOLOM TANPA addColumns =====
+      // 1. Load header yang ada
+      await sheet.loadHeaderRow();
+      let currentHeaders = sheet.headerValues || [];
+      console.log('📋 Header saat ini:', currentHeaders);
+
+      // 2. Cek apakah kolom ongkir dan voucher_dipakai sudah ada
+      const needsOngkir = !currentHeaders.includes('ongkir');
+      const needsVoucher = !currentHeaders.includes('voucher_dipakai');
+
+      if (needsOngkir || needsVoucher) {
+        console.log('📝 Menambahkan kolom baru...');
+        
+        // 3. Buat header baru dengan kolom tambahan
+        let newHeaders = [...currentHeaders];
+        if (needsOngkir) newHeaders.push('ongkir');
+        if (needsVoucher) newHeaders.push('voucher_dipakai');
+        
+        // 4. Update header sheet
+        await sheet.setHeaderRow(newHeaders);
+        console.log('✅ Header berhasil diupdate:', newHeaders);
+        
+        // 5. Reload header
         await sheet.loadHeaderRow();
       }
     }
@@ -90,6 +101,7 @@ async function getOrdersSheet(retryCount = 0) {
     sheetCacheTime = now;
     return sheet;
   } catch (err) {
+    // Rate limit handling
     if (err.message && (err.message.includes('429') || err.message.includes('Quota'))) {
       if (retryCount < 5) {
         const delay = Math.pow(2, retryCount) * 2000;
@@ -107,7 +119,7 @@ async function getOrdersSheet(retryCount = 0) {
 function invalidateSheetCache() {
   sheetCache = null;
   sheetCacheTime = 0;
-  console.log('🔄 Cache sheet di-invalidate (setelah write)');
+  console.log('🔄 Cache sheet di-invalidate');
 }
 
 async function createOrderRow(orderData) {
@@ -126,7 +138,6 @@ async function findOrderByOrderId(orderId) {
 async function findOrdersByPhone(phone) {
   const sheet = await getOrdersSheet();
   const rows = await sheet.getRows();
-  // Pastikan phone dibandingkan sebagai string (bisa dengan leading zero)
   const clean = String(phone).replace(/\D/g, '');
   return rows
     .filter((r) => {
