@@ -132,8 +132,10 @@
         if (msgEl) msgEl.style.display = 'none';
         try {
             // Kirim phone apa adanya (dengan leading zero)
+            console.log('🔍 Searching phone:', phone);
             const res = await fetch(`${API_BASE_URL}/track-order?phone=${encodeURIComponent(phone)}`);
             const json = await res.json();
+            console.log('📦 Response:', json);
             if (!json.success) throw new Error(json.message);
             if (!json.orders || !json.orders.length) {
                 if (msgEl) {
@@ -148,6 +150,7 @@
                 renderOrderList(json.orders);
             }
         } catch (e) {
+            console.error('❌ Search error:', e);
             if (msgEl) {
                 msgEl.textContent = e.message || 'Gagal mencari pesanan.';
                 msgEl.style.display = 'block';
