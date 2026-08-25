@@ -1,6 +1,9 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
-// FULL VERSION dengan localStorage, polling resi, total_amount dari Cashi
+// FULL VERSION — revisi:
+// - Prefix +62 untuk nomor HP
+// - Harga coret hanya saat voucher digunakan
+// - Tombol konfirmasi dihapus
 // ============================================================
 
 (function() {
@@ -45,7 +48,6 @@
         return Math.round(total - (total * disc / 100));
     }
 
-    // ===== PERBAIKAN: updatePriceDisplay dengan coretan total + ongkir =====
     function updatePriceDisplay() {
         const qty = currentQty;
         const originalTotal = productPrice * qty;
@@ -54,7 +56,7 @@
         const totalDiscounted = finalTotal + shipping;           // harga setelah diskon ongkir
         const totalOriginal = finalTotal + shippingFee;         // harga sebelum diskon ongkir (asli)
 
-        // Harga asli produk (coret)
+        // Harga asli produk (coret) — selalu tampil
         const priceOriginal = document.getElementById('price-original');
         if (priceOriginal) priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
 
@@ -76,7 +78,7 @@
             summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
         }
 
-        // ===== TOTAL: tampilkan coret jika voucher digunakan =====
+        // ===== TOTAL: tampilkan coret hanya jika voucher digunakan =====
         const summaryTotal = document.getElementById('summary-total');
         if (summaryTotal) {
             if (voucherUsed) {
@@ -92,17 +94,17 @@
             }
         }
 
-        // Footer: harga asli (coret) dan harga diskon
+        // Footer: harga coret hanya muncul jika voucher digunakan
         const footerOriginal = document.getElementById('footer-original');
+        const footerDiscount = document.getElementById('footer-discount');
         if (footerOriginal) {
             if (voucherUsed) {
+                footerOriginal.style.display = 'inline';
                 footerOriginal.textContent = 'Rp ' + totalOriginal.toLocaleString();
             } else {
-                footerOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+                footerOriginal.style.display = 'none';
             }
         }
-
-        const footerDiscount = document.getElementById('footer-discount');
         if (footerDiscount) footerDiscount.textContent = 'Rp ' + totalDiscounted.toLocaleString();
 
         // Sticky
@@ -114,9 +116,6 @@
             if (voucherUsed && totalOriginal > totalDiscounted) {
                 stickyStrike.style.display = 'block';
                 stickyStrike.textContent = 'Rp ' + totalOriginal.toLocaleString();
-            } else if (originalTotal > finalTotal) {
-                stickyStrike.style.display = 'block';
-                stickyStrike.textContent = 'Rp ' + originalTotal.toLocaleString();
             } else {
                 stickyStrike.style.display = 'none';
             }
@@ -368,7 +367,7 @@
     }
 
     // ============================================================
-    // 6. SHOW SECTION — Sembunyikan sticky footer di payment/packed
+    // 6. SHOW SECTION
     // ============================================================
     function showSection(id) {
         Object.keys(sections).forEach(key => {
@@ -377,7 +376,7 @@
             }
         });
 
-        // ===== SEMBUNYIKAN STICKY FOOTER DI PAYMENT/PACKED =====
+        // Sembunyikan sticky footer di payment/packed
         const footer = document.getElementById('sticky-footer');
         if (footer) {
             if (id === 'payment' || id === 'packed') {
@@ -472,6 +471,7 @@
     // ============================================================
     async function handleCheckout() {
         const nama = document.getElementById('full-name').value.trim();
+        // Ambil nomor HP dari input (tanpa prefix +62)
         let noHp = document.getElementById('phone').value.trim();
         const provinsi = document.getElementById('provinsi').value;
         const kabupaten = document.getElementById('kabupaten').value;
@@ -483,6 +483,7 @@
         if (!noHp || noHp.length < 8) { alert('Nomor HP tidak valid!'); return; }
         if (!kecamatan || !alamat || !destId) { alert('Harap pilih kecamatan dari daftar dan isi alamat lengkap!'); return; }
 
+        // Bersihkan nomor HP (hapus non-digit)
         noHp = noHp.replace(/\D/g, '');
 
         const qty = currentQty;
@@ -621,7 +622,6 @@
                     if (waBtn) {
                         waBtn.style.display = 'inline-block';
                         waBtn.onclick = () => {
-                            // Hapus pending state
                             sessionStorage.removeItem('pendingPayment');
                             showPackedPage(orderData);
                         };
@@ -653,7 +653,7 @@
     }
 
     // ============================================================
-    // 10. SHOW PACKED PAGE (dengan polling resi & sembunyikan tombol)
+    // 10. SHOW PACKED PAGE (tanpa tombol konfirmasi)
     // ============================================================
     function showPackedPage(data) {
         showSection('packed');
@@ -673,33 +673,22 @@
         if (btnWa) {
             btnWa.onclick = () => {
                 const pesan = `Halo ${data.nama},\n\nPesanan Anda (${data.orderId}) sudah dikemas.\nResi: ${data.resi || '-'}\nTotal: Rp ${data.totalHarga.toLocaleString()}\nKurir: ${data.kurir}\n\nTerima kasih!`;
-                const url = `https://wa.me/${data.noHp.replace(/^0+/, '')}?text=${encodeURIComponent(pesan)}`;
+                const url = `https://wa.me/${data.noHp}?text=${encodeURIComponent(pesan)}`;
                 window.open(url, '_blank');
             };
         }
 
-        const btnConfirm = document.getElementById('btn-confirm-shipped');
-        // Sembunyikan tombol konfirmasi jika NON-COD (karena akan diupdate otomatis)
-        if (btnConfirm) {
-            if (!data.isCOD) {
-                btnConfirm.style.display = 'none';
-                // Polling untuk cek resi
-                pollResiAndUpdate(data.orderId);
-            } else {
-                btnConfirm.style.display = 'block';
-                btnConfirm.onclick = () => {
-                    const pesanAdmin = `Halo Admin,\n\nSaya sudah mengantarkan paket ke outlet ekspedisi.\nOrder ID: ${data.orderId}\nResi: ${data.resi}\nKurir: ${data.kurir}\n\nMohon update status di spreadsheet menjadi "sudah_dikirim = TRUE".`;
-                    const url = `https://wa.me/${CONFIG.WA_ADMIN}?text=${encodeURIComponent(pesanAdmin)}`;
-                    window.open(url, '_blank');
-                    alert('✅ Kirim pesan ke admin. Jangan lupa update spreadsheet!');
-                };
-            }
-        }
+        // Tombol konfirmasi sudah dihapus dari HTML
 
         document.getElementById('btn-back-home-packed').onclick = () => {
             sessionStorage.removeItem('pendingPayment');
             showSection('landing');
         };
+
+        // Jika NON-COD, polling resi (tapi tombol konfirmasi sudah hilang)
+        if (!data.isCOD) {
+            pollResiAndUpdate(data.orderId);
+        }
     }
 
     // ============================================================
@@ -731,10 +720,12 @@
     }
 
     // ============================================================
-    // 12. HANDLE TRACKING
+    // 12. HANDLE TRACKING (di landing page)
     // ============================================================
     async function handleTracking() {
-        const noHp = document.getElementById('track-phone').value.trim();
+        // Ambil nomor HP dari input tracking (tanpa prefix)
+        const raw = document.getElementById('track-phone').value.trim();
+        const noHp = raw.replace(/\D/g, '');
         if (!noHp) {
             alert('Masukkan No HP!');
             return;
@@ -881,17 +872,15 @@
     }
 
     // ============================================================
-    // 15. RESTORE PENDING PAYMENT (saat load)
+    // 15. RESTORE PENDING PAYMENT
     // ============================================================
     function restorePendingPayment() {
         try {
             const pending = sessionStorage.getItem('pendingPayment');
             if (pending) {
                 const data = JSON.parse(pending);
-                // Cek apakah masih dalam waktu 30 menit
                 if (Date.now() - data.timestamp < 30 * 60 * 1000) {
                     console.log('⏳ Restoring pending payment:', data.orderId);
-                    // Tampilkan halaman payment dengan data tersimpan
                     showPaymentPage(data.cashiResp, data.orderData);
                     return true;
                 } else {
@@ -906,14 +895,11 @@
     // 16. INIT
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Cek apakah ada pending payment yang harus direstore
         const restored = restorePendingPayment();
         if (restored) {
-            // Jika berhasil restore, tidak perlu load config lagi (sudah di load)
             return;
         }
 
-        // Load config
         loadConfig();
 
         // QTY
@@ -972,7 +958,7 @@
             btnCheckout2.addEventListener('click', handleCheckout);
         }
 
-        // TOMBOL LACAK
+        // LACAK
         const btnTrack = document.getElementById('btn-track');
         if (btnTrack) {
             btnTrack.addEventListener('click', function(e) {
