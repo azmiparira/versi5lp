@@ -1,6 +1,6 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
-// FULL VERSION — dengan semua fitur & polling 10 detik
+// FULL VERSION — dengan semua fitur
 // ============================================================
 
 (function() {
@@ -53,33 +53,34 @@
         const shipping = voucherUsed ? 0 : shippingFee;
         const total = finalTotal + shipping;
 
-        const elements = {
-            'price-original': 'Rp ' + originalTotal.toLocaleString(),
-            'price-discount': 'Rp ' + finalTotal.toLocaleString(),
-            'qty-display': qty,
-            'summary-subtotal': 'Rp ' + finalTotal.toLocaleString(),
-            'summary-total': '<strong>Rp ' + total.toLocaleString() + '</strong>',
-            'footer-original': 'Rp ' + originalTotal.toLocaleString(),
-            'footer-discount': 'Rp ' + total.toLocaleString(),
-        };
-        Object.keys(elements).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                if (id === 'summary-total') el.innerHTML = elements[id];
-                else el.textContent = elements[id];
-            }
-        });
+        // Update semua elemen harga
+        const priceOriginal = document.getElementById('price-original');
+        const priceDiscount = document.getElementById('price-discount');
+        const qtyDisplay = document.getElementById('qty-display');
+        const summarySubtotal = document.getElementById('summary-subtotal');
+        const summaryShipping = document.getElementById('summary-shipping');
+        const summaryTotal = document.getElementById('summary-total');
+        const footerOriginal = document.getElementById('footer-original');
+        const footerDiscount = document.getElementById('footer-discount');
 
-        const shippingEl = document.getElementById('summary-shipping');
-        if (shippingEl) {
-            shippingEl.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
+        if (priceOriginal) priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+        if (priceDiscount) priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
+        if (qtyDisplay) qtyDisplay.textContent = qty;
+        if (summarySubtotal) summarySubtotal.textContent = 'Rp ' + finalTotal.toLocaleString();
+        if (summaryShipping) {
+            summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
         }
+        if (summaryTotal) summaryTotal.innerHTML = '<strong>Rp ' + total.toLocaleString() + '</strong>';
+        // Footer: harga coret = harga asli (ORIGINAL TOTAL), harga diskon = total setelah diskon+ongkir
+        if (footerOriginal) footerOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+        if (footerDiscount) footerDiscount.textContent = 'Rp ' + total.toLocaleString();
 
+        // Sticky footer
         const stickyPrice = document.getElementById('sticky-price');
         const stickyStrike = document.getElementById('sticky-strike');
         if (stickyPrice) stickyPrice.textContent = 'Rp ' + total.toLocaleString();
         if (stickyStrike) {
-            if (originalTotal > finalTotal) {
+            if (originalTotal > finalTotal || voucherUsed) {
                 stickyStrike.style.display = 'block';
                 stickyStrike.textContent = 'Rp ' + originalTotal.toLocaleString();
             } else {
@@ -275,10 +276,8 @@
                                 document.getElementById('kabupaten').value = this.dataset.kabupaten;
                                 document.getElementById('kecamatan').value = this.dataset.kecamatan;
                                 document.getElementById('destination-address-id').value = this.dataset.destinationId;
-                                // Tampilkan di input
                                 searchInput.value = this.dataset.kelurahan + ', ' + this.dataset.kecamatan;
                                 resultsDiv.classList.remove('active');
-                                // Sembunyikan error
                                 const errArea = document.getElementById('err-area');
                                 if (errArea) errArea.classList.remove('show');
                             });
@@ -505,6 +504,7 @@
                 courierChoice: selectedCourier,
                 paymentType: isCOD ? 'COD' : 'NONCOD',
                 paymentChannel: isCOD ? null : selectedPayment,
+                useVoucher: voucherUsed,
             };
 
             const response = await fetch(`${CONFIG.API_BASE_URL}/create-order`, {
@@ -528,9 +528,12 @@
                 metodeBayar: selectedPayment,
                 resi: result.resi || '-',
                 isCOD: isCOD,
+                shippingFee: shipping,
+                useVoucher: voucherUsed,
             };
 
             if (isCOD) {
+                // COD langsung ke packed
                 showPackedPage(currentOrderData);
             } else {
                 if (result.payment) {
@@ -545,7 +548,7 @@
     }
 
     // ============================================================
-    // 10. SHOW PAYMENT PAGE
+    // 10. SHOW PAYMENT PAGE (dengan steps/tutorial)
     // ============================================================
     function showPaymentPage(cashiResp, orderData) {
         showSection('payment');
@@ -553,25 +556,121 @@
         const statusDiv = document.getElementById('payment-status');
         const waBtn = document.getElementById('btn-wa-payment');
 
+        // Tampilkan info dasar
         let html = `<p><strong>Total:</strong> Rp ${orderData.totalHarga.toLocaleString()}</p>`;
         html += `<p><strong>Order ID:</strong> ${orderData.orderId}</p>`;
+
+        // Tampilkan QR/VA/Retail + steps
         if (cashiResp.qrUrl) {
-            html += `<p>Scan QRIS:</p><img src="${cashiResp.qrUrl}" style="max-width:200px;display:block;margin:10px auto;border-radius:10px;"/>`;
+            html += `<div class="qr-box"><img src="${cashiResp.qrUrl}" style="max-width:220px;display:block;margin:10px auto;border-radius:10px;border:1px solid #ddd;"/></div>`;
+            html += `<div class="payment-steps"><p><strong>Cara Bayar QRIS:</strong></p><ol>
+                <li>Screenshot kode QR yang tampil</li>
+                <li>Masuk ke aplikasi dompet digital (Dana, Gopay, Ovo, Shopeepay, Linkaja, dll)</li>
+                <li>Buka Scan QR pada aplikasi dompet digital anda</li>
+                <li>Scan QR yang muncul pada halaman pembelian anda</li>
+                <li>Akan muncul detail transaksi. Pastikan data transaksi sudah sesuai</li>
+                <li>Selesaikan proses pembayaran Anda</li>
+                <li>Transaksi selesai. Simpan bukti pembayaran Anda</li>
+            </ol></div>`;
         } else if (cashiResp.va_number) {
-            html += `<p><strong>Virtual Account:</strong> ${cashiResp.va_number}</p><p><strong>Bank:</strong> ${cashiResp.bank_name || cashiResp.bank}</p>`;
+            const bankName = cashiResp.bank_name || cashiResp.bank || 'Virtual Account';
+            html += `<div class="va-box" style="background:#1a1a2e;color:#fff;border-radius:12px;padding:16px;margin:12px 0;">
+                <div style="font-size:12px;text-transform:uppercase;color:#9FE6B8;font-weight:700;">${bankName}</div>
+                <div style="font-size:22px;font-weight:700;font-family:monospace;margin:6px 0;word-break:break-all;">${cashiResp.va_number}</div>
+                <button onclick="navigator.clipboard?.writeText('${cashiResp.va_number}')" style="background:#4CAF50;color:#fff;border:none;border-radius:30px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer;">Salin Nomor VA</button>
+            </div>`;
+            // Steps sesuai bank
+            let steps = [];
+            if (bankName.includes('BCA')) {
+                steps = [
+                    'Buka aplikasi mobile banking BCA',
+                    'Pilih menu Transfer / Virtual Account',
+                    'Masukkan nomor Virtual Account yang diberikan',
+                    'Masukkan nominal pembayaran',
+                    'Pastikan data transaksi sudah sesuai',
+                    'Konfirmasi dan selesaikan pembayaran',
+                    'Transaksi selesai. Simpan bukti pembayaran Anda'
+                ];
+            } else if (bankName.includes('Mandiri')) {
+                steps = [
+                    'Buka aplikasi mobile banking Mandiri',
+                    'Pilih menu Transfer / Virtual Account',
+                    'Masukkan nomor Virtual Account yang diberikan',
+                    'Masukkan nominal pembayaran',
+                    'Pastikan data transaksi sudah sesuai',
+                    'Konfirmasi dan selesaikan pembayaran',
+                    'Transaksi selesai. Simpan bukti pembayaran Anda'
+                ];
+            } else if (bankName.includes('BNI')) {
+                steps = [
+                    'Buka aplikasi mobile banking BNI',
+                    'Pilih menu Transfer / Virtual Account',
+                    'Masukkan nomor Virtual Account yang diberikan',
+                    'Masukkan nominal pembayaran',
+                    'Pastikan data transaksi sudah sesuai',
+                    'Konfirmasi dan selesaikan pembayaran',
+                    'Transaksi selesai. Simpan bukti pembayaran Anda'
+                ];
+            } else if (bankName.includes('BRI')) {
+                steps = [
+                    'Buka aplikasi mobile banking BRI',
+                    'Pilih menu Transfer / Virtual Account',
+                    'Masukkan nomor Virtual Account yang diberikan',
+                    'Masukkan nominal pembayaran',
+                    'Pastikan data transaksi sudah sesuai',
+                    'Konfirmasi dan selesaikan pembayaran',
+                    'Transaksi selesai. Simpan bukti pembayaran Anda'
+                ];
+            } else if (bankName.includes('BSI')) {
+                steps = [
+                    'Buka aplikasi mobile banking BSI',
+                    'Pilih menu Transfer / Virtual Account',
+                    'Masukkan nomor Virtual Account yang diberikan',
+                    'Masukkan nominal pembayaran',
+                    'Pastikan data transaksi sudah sesuai',
+                    'Konfirmasi dan selesaikan pembayaran',
+                    'Transaksi selesai. Simpan bukti pembayaran Anda'
+                ];
+            } else {
+                steps = [
+                    'Buka aplikasi mobile banking anda',
+                    'Pilih menu Transfer / Virtual Account',
+                    'Masukkan nomor Virtual Account yang diberikan',
+                    'Masukkan nominal pembayaran',
+                    'Pastikan data transaksi sudah sesuai',
+                    'Konfirmasi dan selesaikan pembayaran',
+                    'Transaksi selesai. Simpan bukti pembayaran Anda'
+                ];
+            }
+            html += `<div class="payment-steps"><p><strong>Cara Bayar Virtual Account:</strong></p><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
         } else if (cashiResp.payment_code) {
-            html += `<p><strong>Kode Pembayaran:</strong> ${cashiResp.payment_code}</p><p><strong>Retail:</strong> ${cashiResp.retail_name || cashiResp.retail_code}</p>`;
+            const retailName = cashiResp.retail_name || cashiResp.retail_code || 'Retail';
+            html += `<div class="va-box" style="background:#1a1a2e;color:#fff;border-radius:12px;padding:16px;margin:12px 0;">
+                <div style="font-size:12px;text-transform:uppercase;color:#9FE6B8;font-weight:700;">${retailName}</div>
+                <div style="font-size:22px;font-weight:700;font-family:monospace;margin:6px 0;word-break:break-all;">${cashiResp.payment_code}</div>
+                <button onclick="navigator.clipboard?.writeText('${cashiResp.payment_code}')" style="background:#4CAF50;color:#fff;border:none;border-radius:30px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer;">Salin Kode Bayar</button>
+            </div>`;
+            const retailSteps = [
+                `Datang ke gerai ${retailName} terdekat`,
+                'Sampaikan kepada kasir ingin melakukan pembayaran',
+                'Sebutkan kode pembayaran yang diberikan',
+                'Bayar sesuai nominal yang tertera',
+                'Simpan bukti pembayaran Anda'
+            ];
+            html += `<div class="payment-steps"><p><strong>Cara Bayar Retail:</strong></p><ol>${retailSteps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
         } else {
             html += `<pre>${JSON.stringify(cashiResp, null, 2)}</pre>`;
         }
+
         if (instr) instr.innerHTML = html;
         if (statusDiv) {
             statusDiv.innerHTML = `<p>Menunggu pembayaran... (auto-check setiap 10 detik)</p><div class="spinner"></div>`;
         }
         if (waBtn) waBtn.style.display = 'none';
 
+        // Polling 10 detik
         let pollCount = 0;
-        const maxPolls = 30; // 30 x 10 detik = 5 menit
+        const maxPolls = 30; // 30 x 10 = 5 menit
         const interval = setInterval(async () => {
             pollCount++;
             try {
@@ -580,7 +679,7 @@
                 if (result.success && result.paymentStatus === 'PAID') {
                     clearInterval(interval);
                     if (statusDiv) {
-                        statusDiv.innerHTML = `<p style="color:#25D366;font-weight:bold;">✅ Pembayaran berhasil!</p>`;
+                        statusDiv.innerHTML = `<p style="color:#25D366;font-weight:bold;">✅ Pembayaran berhasil! Silakan lanjutkan.</p>`;
                     }
                     if (waBtn) {
                         waBtn.style.display = 'inline-block';
@@ -603,7 +702,7 @@
             } catch (e) {
                 console.warn('Polling error:', e);
             }
-        }, 10000); // ⬅️ 10 DETIK (dari 5 detik)
+        }, 10000);
 
         document.getElementById('btn-back-home').onclick = () => showSection('landing');
     }
