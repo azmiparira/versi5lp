@@ -1,5 +1,6 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
+// FULL VERSION — dengan semua fitur
 // ============================================================
 
 (function() {
@@ -229,7 +230,7 @@
     }
 
     // ============================================================
-    // 4. SEARCH KECAMATAN
+    // 4. SEARCH KECAMATAN (DENGAN SUBDISTRICT/KELURAHAN)
     // ============================================================
     function initSearchKecamatan() {
         const searchInput = document.getElementById('kecamatan-search');
@@ -249,26 +250,37 @@
                     resultsDiv.innerHTML = '';
                     const seen = new Set();
                     json.data.forEach(item => {
-                        const label = item.DISTRICT_NAME;
-                        if (label && !seen.has(label)) {
-                            seen.add(label);
+                        // Gunakan SUBDISTRICT_NAME (kelurahan/desa) sebagai label utama
+                        const label = item.SUBDISTRICT_NAME || item.DISTRICT_NAME;
+                        const district = item.DISTRICT_NAME || '';
+                        const city = item.CITY_NAME || '';
+                        const province = item.PROVINCE_NAME || '';
+                        const zip = item.ZIP_CODE || '';
+
+                        if (label && !seen.has(label + district)) {
+                            seen.add(label + district);
                             const div = document.createElement('div');
                             div.className = 'search-result-item';
                             div.innerHTML = `
-                                <div><strong>${label}</strong></div>
-                                <div class="result-detail">${item.CITY_NAME || ''}, ${item.PROVINCE_NAME || ''}</div>
+                                <div><strong>${label}</strong>${district && district !== label ? ', ' + district : ''}</div>
+                                <div class="result-detail">${city}, ${province}${zip ? ' — ' + zip : ''}</div>
                             `;
-                            div.dataset.provinsi = item.PROVINCE_NAME || '';
-                            div.dataset.kabupaten = item.CITY_NAME || '';
-                            div.dataset.kecamatan = label;
+                            div.dataset.provinsi = province;
+                            div.dataset.kabupaten = city;
+                            div.dataset.kecamatan = district;
+                            div.dataset.kelurahan = label;
                             div.dataset.destinationId = item._id || '';
                             div.addEventListener('click', function() {
                                 document.getElementById('provinsi').value = this.dataset.provinsi;
                                 document.getElementById('kabupaten').value = this.dataset.kabupaten;
                                 document.getElementById('kecamatan').value = this.dataset.kecamatan;
                                 document.getElementById('destination-address-id').value = this.dataset.destinationId;
-                                searchInput.value = this.dataset.kecamatan;
+                                // Tampilkan di input
+                                searchInput.value = this.dataset.kelurahan + ', ' + this.dataset.kecamatan;
                                 resultsDiv.classList.remove('active');
+                                // Sembunyikan error
+                                const errArea = document.getElementById('err-area');
+                                if (errArea) errArea.classList.remove('show');
                             });
                             resultsDiv.appendChild(div);
                         }
@@ -293,7 +305,7 @@
     }
 
     // ============================================================
-    // 5. RENDER PAYMENT OPTIONS
+    // 5. RENDER PAYMENT OPTIONS (dengan logo di kiri)
     // ============================================================
     function renderPaymentOptions() {
         const container = document.getElementById('payment-list');
@@ -335,7 +347,7 @@
     }
 
     // ============================================================
-    // 6. RENDER COURIER OPTIONS
+    // 6. RENDER COURIER OPTIONS (dengan logo di kiri)
     // ============================================================
     function renderCourierOptions() {
         const container = document.getElementById('courier-list');
@@ -373,7 +385,7 @@
     }
 
     // ============================================================
-    // 7. RENDER TESTIMONI
+    // 7. RENDER TESTIMONI (5 testimoni, 3 dengan foto produk)
     // ============================================================
     function renderTestimonials() {
         const container = document.getElementById('testimoni-container');
@@ -733,6 +745,11 @@
             { name: 'Siti Aisyah', city: 'Palembang' },
             { name: 'Andi Pratama', city: 'Balikpapan' },
             { name: 'Mega Lestari', city: 'Tangerang' },
+            { name: 'Rudi Hartono', city: 'Bogor' },
+            { name: 'Lisa Permata', city: 'Malang' },
+            { name: 'Doni Saputra', city: 'Pekanbaru' },
+            { name: 'Winda Sari', city: 'Denpasar' },
+            { name: 'Hendra Wijaya', city: 'Manado' },
         ];
 
         const timePhrases = ['baru saja', '1 menit lalu', '2 menit lalu', '3 menit lalu', '4 menit lalu', '5 menit lalu', '8 menit lalu', '10 menit lalu', '12 menit lalu', '15 menit lalu'];
