@@ -1,6 +1,6 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
-// FULL VERSION — dengan semua fitur
+// FULL VERSION — dengan semua fitur & polling 10 detik
 // ============================================================
 
 (function() {
@@ -566,11 +566,12 @@
         }
         if (instr) instr.innerHTML = html;
         if (statusDiv) {
-            statusDiv.innerHTML = `<p>Menunggu pembayaran... (auto-check setiap 5 detik)</p><div class="spinner"></div>`;
+            statusDiv.innerHTML = `<p>Menunggu pembayaran... (auto-check setiap 10 detik)</p><div class="spinner"></div>`;
         }
         if (waBtn) waBtn.style.display = 'none';
 
         let pollCount = 0;
+        const maxPolls = 30; // 30 x 10 detik = 5 menit
         const interval = setInterval(async () => {
             pollCount++;
             try {
@@ -587,7 +588,7 @@
                             showPackedPage(orderData);
                         };
                     }
-                } else if (pollCount >= 60) {
+                } else if (pollCount >= maxPolls) {
                     clearInterval(interval);
                     if (statusDiv) {
                         statusDiv.innerHTML = `<p style="color:red;">⏰ Waktu habis. Jika sudah bayar, klik tombol di bawah.</p>`;
@@ -600,9 +601,9 @@
                     }
                 }
             } catch (e) {
-                console.warn(e);
+                console.warn('Polling error:', e);
             }
-        }, 5000);
+        }, 10000); // ⬅️ 10 DETIK (dari 5 detik)
 
         document.getElementById('btn-back-home').onclick = () => showSection('landing');
     }
