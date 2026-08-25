@@ -1,5 +1,6 @@
 // ============================================================
 // tracking.js — Halaman Lacak Pesanan
+// Dilengkapi throttle untuk mengurangi request ke server
 // ============================================================
 
 (function() {
@@ -13,6 +14,10 @@
 
     const rupiah = (n) => 'Rp' + Math.round(n || 0).toLocaleString('id-ID');
     let cameFromOrderParam = false;
+
+    // ===== THROTTLE =====
+    let lastRequestTime = 0;
+    const MIN_REQUEST_INTERVAL = 2000; // minimal 2 detik antar request
 
     function showOnly(id) {
         ['search-card', 'order-list-card', 'detail-card'].forEach((x) => {
@@ -115,10 +120,21 @@
         });
     }
 
+    // ===== SEARCH BY PHONE (dengan throttle) =====
     async function searchByPhone(phone) {
+        // ===== THROTTLE: minimal 2 detik antar request =====
+        const now = Date.now();
+        const diff = now - lastRequestTime;
+        if (diff < MIN_REQUEST_INTERVAL) {
+            console.log(`⏳ Throttling: menunggu ${(MIN_REQUEST_INTERVAL - diff)/1000} detik...`);
+            await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL - diff));
+        }
+        lastRequestTime = Date.now();
+
         const msgEl = $('#search-msg');
         if (msgEl) msgEl.style.display = 'none';
         try {
+            console.log(`🔍 Mencari pesanan untuk nomor: ${phone}`);
             const res = await fetch(`${API_BASE_URL}/track-order?phone=${encodeURIComponent(phone)}`);
             const json = await res.json();
             if (!json.success) throw new Error(json.message);
@@ -129,12 +145,14 @@
                 }
                 return;
             }
+            console.log(`✅ Ditemukan ${json.orders.length} pesanan`);
             if (json.orders.length === 1) {
                 renderDetail(json.orders[0]);
             } else {
                 renderOrderList(json.orders);
             }
         } catch (e) {
+            console.error('❌ Search error:', e.message);
             if (msgEl) {
                 msgEl.textContent = e.message || 'Gagal mencari pesanan.';
                 msgEl.style.display = 'block';
@@ -142,8 +160,10 @@
         }
     }
 
+    // ===== LOAD BY ORDER ID =====
     async function loadByOrderId(orderId) {
         try {
+            console.log(`🔍 Memuat pesanan: ${orderId}`);
             const res = await fetch(`${API_BASE_URL}/check-status?orderId=${encodeURIComponent(orderId)}`);
             const json = await res.json();
             if (!json.success) throw new Error(json.message);
@@ -158,6 +178,7 @@
                 cnoteNo: json.cnoteNo,
             });
         } catch (e) {
+            console.error('❌ Load order error:', e.message);
             showOnly('search-card');
             const msgEl = $('#search-msg');
             if (msgEl) {
@@ -178,7 +199,7 @@
                 if (phone.length < 9) {
                     const msgEl = $('#search-msg');
                     if (msgEl) {
-                        msgEl.textContent = 'Nomor HP tidak valid.';
+                        msgEl.textContent = 'Nomor HP tidak valid (minimal 9 digit).';
                         msgEl.style.display = 'block';
                     }
                     return;
