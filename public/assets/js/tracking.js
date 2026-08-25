@@ -1,6 +1,6 @@
 // ============================================================
 // tracking.js — Halaman Lacak Pesanan
-// Perbaikan: pencarian berdasarkan no HP dengan leading zero
+// Perbaikan: pencarian no HP tanpa 0 di depan, throttle, tampilan list
 // ============================================================
 
 (function() {
@@ -15,6 +15,7 @@
     const rupiah = (n) => 'Rp' + Math.round(n || 0).toLocaleString('id-ID');
     let cameFromOrderParam = false;
 
+    // ===== THROTTLE: minimal 2 detik antar request =====
     let lastRequestTime = 0;
     const MIN_REQUEST_INTERVAL = 2000;
 
@@ -37,6 +38,7 @@
         INDOMARET: 'Indomaret',
     };
 
+    // ===== RENDER TIMELINE =====
     function renderTimeline(shippingStatus) {
         const waitingBox = $('#waiting-payment-box');
         const timelineBox = $('#timeline-box');
@@ -66,6 +68,7 @@
         if (progress) progress.style.width = `${pct}%`;
     }
 
+    // ===== RENDER DETAIL ORDER =====
     function renderDetail(order) {
         showOnly('detail-card');
         const backBtn = $('#back-to-list');
@@ -94,6 +97,7 @@
         }
     }
 
+    // ===== RENDER LIST ORDER (dalam kotak) =====
     function renderOrderList(orders) {
         showOnly('order-list-card');
         const container = $('#order-list');
@@ -119,6 +123,7 @@
         });
     }
 
+    // ===== SEARCH BY PHONE (dengan throttle) =====
     async function searchByPhone(phone) {
         // Throttle
         const now = Date.now();
@@ -130,12 +135,12 @@
 
         const msgEl = $('#search-msg');
         if (msgEl) msgEl.style.display = 'none';
+
         try {
-            // Kirim phone apa adanya (dengan leading zero)
-            console.log('🔍 Searching phone:', phone);
+            // Kirim phone (sudah bersih dari non-digit, tanpa 0 di depan)
             const res = await fetch(`${API_BASE_URL}/track-order?phone=${encodeURIComponent(phone)}`);
             const json = await res.json();
-            console.log('📦 Response:', json);
+
             if (!json.success) throw new Error(json.message);
             if (!json.orders || !json.orders.length) {
                 if (msgEl) {
@@ -144,13 +149,13 @@
                 }
                 return;
             }
+
             if (json.orders.length === 1) {
                 renderDetail(json.orders[0]);
             } else {
                 renderOrderList(json.orders);
             }
         } catch (e) {
-            console.error('❌ Search error:', e);
             if (msgEl) {
                 msgEl.textContent = e.message || 'Gagal mencari pesanan.';
                 msgEl.style.display = 'block';
@@ -158,6 +163,7 @@
         }
     }
 
+    // ===== LOAD BY ORDER ID (redirect dari checkout) =====
     async function loadByOrderId(orderId) {
         try {
             const res = await fetch(`${API_BASE_URL}/check-status?orderId=${encodeURIComponent(orderId)}`);
@@ -183,14 +189,19 @@
         }
     }
 
-    // ===== INIT =====
+    // ============================================================
+    // INIT
+    // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         const searchBtn = $('#search-btn');
         const phoneInput = $('#phone-input');
 
+        // ===== EVENT SEARCH =====
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
-                const phone = phoneInput ? phoneInput.value.trim() : '';
+                const raw = phoneInput ? phoneInput.value.trim() : '';
+                // Hapus semua karakter non-digit (termasuk 0 di depan akan hilang)
+                const phone = raw.replace(/\D/g, '');
                 if (phone.length < 8) {
                     const msgEl = $('#search-msg');
                     if (msgEl) {
@@ -212,6 +223,7 @@
             });
         }
 
+        // ===== TOMBOL KEMBALI =====
         const backToSearch = $('#back-to-search');
         if (backToSearch) {
             backToSearch.addEventListener('click', () => showOnly('search-card'));
@@ -224,12 +236,14 @@
                     window.location.href = './index.html';
                     return;
                 }
-                const phone = phoneInput ? phoneInput.value.trim() : '';
+                const raw = phoneInput ? phoneInput.value.trim() : '';
+                const phone = raw.replace(/\D/g, '');
                 if (phone) searchByPhone(phone);
                 else showOnly('search-card');
             });
         }
 
+        // ===== CEK PARAMETER ORDER DARI CHECKOUT =====
         const params = new URLSearchParams(window.location.search);
         const orderIdParam = params.get('order');
         if (orderIdParam) {
