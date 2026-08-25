@@ -116,16 +116,20 @@
                 </form>
             </div>
 
-            <!-- Metode Pembayaran (di-render oleh JS) -->
+            <!-- Metode Pembayaran -->
             <div class="payment-section">
                 <h3>Metode Pembayaran:</h3>
-                <div class="payment-list" id="payment-list"></div>
+                <div class="payment-list" id="payment-list">
+                    <!-- Diisi oleh JS -->
+                </div>
             </div>
 
-            <!-- Pilihan Kurir (di-render oleh JS) -->
+            <!-- Pilihan Kurir -->
             <div class="courier-section">
                 <h3>Pilih Kurir:</h3>
-                <div class="courier-list" id="courier-list"></div>
+                <div class="courier-list" id="courier-list">
+                    <!-- Diisi oleh JS -->
+                </div>
             </div>
 
             <!-- Rincian Pesanan -->
@@ -143,100 +147,99 @@
                 <button id="btn-track" class="btn-secondary"><i class="fas fa-search"></i> Lacak Pesanan</button>
             </div>
 
-            <!-- Testimoni (di-render oleh JS) -->
             <!-- Testimoni -->
-<div class="testimonial-section">
-    <h3>Testimoni:</h3>
+            <div class="testimonial-section">
+                <h3>Testimoni:</h3>
 
-    <!-- Testimoni 1 (dengan foto produk) ★★★★★ -->
-    <div class="testimonial-card">
-        <div class="testi-header">
-            <div class="testi-left">
-                <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
-                <div>
-                    <span class="testi-name">Dwi Rahmawati</span>
-                    <div class="testi-stars">★★★★★</div>
+                <!-- Testimoni 1 (dengan foto produk) -->
+                <div class="testimonial-card">
+                    <div class="testi-header">
+                        <div class="testi-left">
+                            <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
+                            <div>
+                                <span class="testi-name">Dwi Rahmawati</span>
+                                <div class="testi-stars">★★★★★</div>
+                            </div>
+                        </div>
+                        <span class="testi-badge">Pembeli</span>
+                    </div>
+                    <div class="testi-product-photo">
+                        <img src="./assets/img/testi-produk1.jpg" alt="Foto Produk" />
+                    </div>
+                    <p class="testi-text">Mantap barang dah sampe dengan aman min packing tebel.. semalem nyoba semprot di bantal pas anak lagi rewel susah tidur, eh selang bentar langsung anteng terus pules dong wkwk wangi aromaterapinya calming bgt ga menyengat. rekomended bgt buat emak2 yg anaknya susah tidur</p>
+                </div>
+
+                <!-- Testimoni 2 (dengan foto produk) -->
+                <div class="testimonial-card">
+                    <div class="testi-header">
+                        <div class="testi-left">
+                            <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
+                            <div>
+                                <span class="testi-name">Budi Santoso</span>
+                                <div class="testi-stars">★★★★★</div>
+                            </div>
+                        </div>
+                        <span class="testi-badge">Pembeli</span>
+                    </div>
+                    <div class="testi-product-photo">
+                        <img src="./assets/img/testi-produk2.jpg" alt="Foto Produk" />
+                    </div>
+                    <p class="testi-text">Bagus banget! Aroma nya menenangkan, langsung tidur nyenyak. Udah beli 3 kali dan selalu puas. Cepat dikirim, packing aman. Recommended!</p>
+                </div>
+
+                <!-- Testimoni 3 (dengan foto produk) -->
+                <div class="testimonial-card">
+                    <div class="testi-header">
+                        <div class="testi-left">
+                            <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
+                            <div>
+                                <span class="testi-name">Siti Nurhaliza</span>
+                                <div class="testi-stars">★★★★★</div>
+                            </div>
+                        </div>
+                        <span class="testi-badge">Pembeli</span>
+                    </div>
+                    <div class="testi-product-photo">
+                        <img src="./assets/img/testi-produk3.jpg" alt="Foto Produk" />
+                    </div>
+                    <p class="testi-text">Anak saya jadi gampang tidur, ga rewel lagi. Wanginya juga ga nyengat, bikin kamar jadi adem. Pengiriman cepat, puas banget!</p>
+                </div>
+
+                <!-- Testimoni 4 (tanpa foto produk) -->
+                <div class="testimonial-card no-avatar">
+                    <div class="testi-header">
+                        <div class="testi-left">
+                            <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
+                            <div>
+                                <span class="testi-name">Rizky Fadillah</span>
+                                <div class="testi-stars">★★★★★</div>
+                            </div>
+                        </div>
+                        <span class="testi-badge">Pembeli</span>
+                    </div>
+                    <p class="testi-text">Produk asli BPOM, aman. Wangi nya calming, bikin tidur lebih nyenyak. Langsung order lagi buat stok. Mantap!</p>
+                </div>
+
+                <!-- Testimoni 5 (tanpa foto produk) -->
+                <div class="testimonial-card no-avatar">
+                    <div class="testi-header">
+                        <div class="testi-left">
+                            <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
+                            <div>
+                                <span class="testi-name">Andi Wijaya</span>
+                                <div class="testi-stars">★★★★☆</div>
+                            </div>
+                        </div>
+                        <span class="testi-badge">Pembeli</span>
+                    </div>
+                    <p class="testi-text">Cukup membantu untuk tidur, efeknya lumayan. Mungkin butuh waktu adaptasi, tapi overall bagus. Pengiriman cepat.</p>
+                </div>
+
+                <div class="testimonial-view-all">
+                    <span>Lihat semua ></span>
+                    <span class="testimonial-count">(1.234+ ulasan)</span>
                 </div>
             </div>
-            <span class="testi-badge">Pembeli</span>
-        </div>
-        <div class="testi-product-photo">
-            <img src="./assets/img/testimoni/testi-produk1.jpg" alt="Foto Produk" onerror="this.style.display='none';" />
-        </div>
-        <p class="testi-text">Mantap barang dah sampe dengan aman min packing tebel.. semalem nyoba semprot di bantal pas anak lagi rewel susah tidur, eh selang bentar langsung anteng terus pules dong wkwk wangi aromaterapinya calming bgt ga menyengat. rekomended bgt buat emak2 yg anaknya susah tidur</p>
-    </div>
-
-    <!-- Testimoni 2 (dengan foto produk) ★★★★★ -->
-    <div class="testimonial-card">
-        <div class="testi-header">
-            <div class="testi-left">
-                <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
-                <div>
-                    <span class="testi-name">Budi Santoso</span>
-                    <div class="testi-stars">★★★★★</div>
-                </div>
-            </div>
-            <span class="testi-badge">Pembeli</span>
-        </div>
-        <div class="testi-product-photo">
-            <img src="./assets/img/testimoni/testi-produk2.jpg" alt="Foto Produk" onerror="this.style.display='none';" />
-        </div>
-        <p class="testi-text">Bagus banget! Aroma nya menenangkan, langsung tidur nyenyak. Udah beli 3 kali dan selalu puas. Cepat dikirim, packing aman. Recommended!</p>
-    </div>
-
-    <!-- Testimoni 3 (dengan foto produk) ★★★★★ -->
-    <div class="testimonial-card">
-        <div class="testi-header">
-            <div class="testi-left">
-                <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
-                <div>
-                    <span class="testi-name">Siti Nurhaliza</span>
-                    <div class="testi-stars">★★★★★</div>
-                </div>
-            </div>
-            <span class="testi-badge">Pembeli</span>
-        </div>
-        <div class="testi-product-photo">
-            <img src="./assets/img/testimoni/testi-produk3.jpg" alt="Foto Produk" onerror="this.style.display='none';" />
-        </div>
-        <p class="testi-text">Anak saya jadi gampang tidur, ga rewel lagi. Wanginya juga ga nyengat, bikin kamar jadi adem. Pengiriman cepat, puas banget!</p>
-    </div>
-
-    <!-- Testimoni 4 (tanpa foto) ★★★★★ -->
-    <div class="testimonial-card no-avatar">
-        <div class="testi-header">
-            <div class="testi-left">
-                <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
-                <div>
-                    <span class="testi-name">Rizky Fadillah</span>
-                    <div class="testi-stars">★★★★★</div>
-                </div>
-            </div>
-            <span class="testi-badge">Pembeli</span>
-        </div>
-        <p class="testi-text">Produk asli BPOM, aman. Wangi nya calming, bikin tidur lebih nyenyak. Langsung order lagi buat stok. Mantap!</p>
-    </div>
-
-    <!-- Testimoni 5 (tanpa foto) ★★★★☆ -->
-    <div class="testimonial-card no-avatar">
-        <div class="testi-header">
-            <div class="testi-left">
-                <div class="testi-avatar-placeholder"><i class="fas fa-user"></i></div>
-                <div>
-                    <span class="testi-name">Andi Wijaya</span>
-                    <div class="testi-stars">★★★★☆</div>
-                </div>
-            </div>
-            <span class="testi-badge">Pembeli</span>
-        </div>
-        <p class="testi-text">Cukup membantu untuk tidur, efeknya lumayan. Mungkin butuh waktu adaptasi, tapi overall bagus. Pengiriman cepat.</p>
-    </div>
-
-    <div class="testimonial-view-all">
-        <span>Lihat semua ></span>
-        <span class="testimonial-count">(1.234+ ulasan)</span>
-    </div>
-</div>
 
             <!-- Powered By -->
             <div class="powered-by">
