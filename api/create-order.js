@@ -28,6 +28,8 @@ module.exports = async (req, res) => {
       destinationAddressId, qty, courierChoice, paymentType, paymentChannel,
     } = req.body || {};
 
+    console.log('📥 Incoming order payload:', req.body);
+
     // Validasi
     const missing = [];
     if (!customerName) missing.push('customerName');
@@ -43,6 +45,7 @@ module.exports = async (req, res) => {
     if (!paymentType) missing.push('paymentType');
 
     if (missing.length) {
+      console.warn('⚠️ Missing fields:', missing);
       return res.status(400).json({
         success: false,
         message: `Data belum lengkap: ${missing.join(', ')}`,
@@ -67,6 +70,8 @@ module.exports = async (req, res) => {
     const orderId = generateOrderId();
     const fullAddress = `${addressDetail}, ${subdistrict}, ${district}, ${city}, ${province}`;
 
+    console.log(`📦 Order ID: ${orderId}, Total: ${pricing.totalDiscounted}`);
+
     const baseRow = {
       order_id: orderId,
       created_at: new Date().toISOString(),
@@ -87,6 +92,7 @@ module.exports = async (req, res) => {
 
     // ===== COD =====
     if (paymentType === 'COD') {
+      console.log('🔵 Processing COD order...');
       const mengantarResult = await createMengantarOrder({
         courierApiValue,
         pickupAddressId: PICKUP_ADDRESS_ID,
@@ -101,6 +107,7 @@ module.exports = async (req, res) => {
       });
 
       const item = (mengantarResult.data && mengantarResult.data[0]) || {};
+      console.log('📦 Mengantar COD response:', item);
 
       await createOrderRow({
         ...baseRow,
@@ -125,10 +132,16 @@ module.exports = async (req, res) => {
 
     // ===== NON-COD =====
     if (paymentType === 'NONCOD') {
+      console.log('🟢 Processing NON-COD order, channel:', paymentChannel);
+
       // Cek channel
       const channelConfig = Object.values(PAYMENT_CHANNELS).find((c) => c.kode_channel === paymentChannel);
       if (!channelConfig) {
-        return res.status(400).json({ success: false, message: 'Metode pembayaran tidak valid' });
+        console.error('❌ Invalid channel:', paymentChannel);
+        return res.status(400).json({
+          success: false,
+          message: `Metode pembayaran tidak valid: ${paymentChannel}`,
+        });
       }
 
       if (pricing.totalDiscounted < channelConfig.min || pricing.totalDiscounted > channelConfig.max) {
@@ -139,11 +152,23 @@ module.exports = async (req, res) => {
       }
 
       // Buat transaksi Cashi
-      const cashiResult = await createCashiOrder({
-        amount: pricing.totalDiscounted,
-        orderId,
-        kodeChannel: paymentChannel,
-      });
+      console.log('🔄 Creating Cashi order...');
+      let cashiResult;
+      try {
+        cashiResult = await createCashiOrder({
+          amount: pricing.totalDiscounted,
+          orderId,
+          kodeChannel: paymentChannel,
+        });
+        console.log('✅ Cashi order created:', cashiResult);
+      } catch (cashiErr) {
+        console.error('❌ Cashi error:', cashiErr.message);
+        console.error('❌ Cashi error response:', cashiErr.response || '');
+        return res.status(500).json({
+          success: false,
+          message: cashiErr.message || 'Gagal menghubungi Cashi. Periksa API key dan channel.',
+        });
+      }
 
       await createOrderRow({
         ...baseRow,
@@ -168,7 +193,7 @@ module.exports = async (req, res) => {
 
     return res.status(400).json({ success: false, message: 'paymentType harus COD atau NONCOD' });
   } catch (err) {
-    console.error('create-order error:', err);
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('❌ create-order error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Internal server error' });
   }
 };
