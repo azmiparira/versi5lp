@@ -1,5 +1,6 @@
 // ============================================================
 // tracking.js — Halaman Lacak Pesanan
+// Perbaikan: pencarian berdasarkan no HP dengan leading zero
 // ============================================================
 
 (function() {
@@ -119,17 +120,6 @@
     }
 
     async function searchByPhone(phone) {
-        // Normalisasi: hapus semua non-digit, tapi tetap cari dengan apa adanya
-        const cleanPhone = String(phone).replace(/\D/g, '');
-        if (cleanPhone.length < 8) {
-            const msgEl = $('#search-msg');
-            if (msgEl) {
-                msgEl.textContent = 'Nomor HP tidak valid (minimal 8 digit).';
-                msgEl.style.display = 'block';
-            }
-            return;
-        }
-
         // Throttle
         const now = Date.now();
         const diff = now - lastRequestTime;
@@ -140,10 +130,9 @@
 
         const msgEl = $('#search-msg');
         if (msgEl) msgEl.style.display = 'none';
-
         try {
-            console.log(`🔍 Mencari pesanan untuk nomor: ${cleanPhone}`);
-            const res = await fetch(`${API_BASE_URL}/track-order?phone=${encodeURIComponent(cleanPhone)}`);
+            // Kirim phone apa adanya (dengan leading zero)
+            const res = await fetch(`${API_BASE_URL}/track-order?phone=${encodeURIComponent(phone)}`);
             const json = await res.json();
             if (!json.success) throw new Error(json.message);
             if (!json.orders || !json.orders.length) {
@@ -153,14 +142,12 @@
                 }
                 return;
             }
-            console.log(`✅ Ditemukan ${json.orders.length} pesanan`);
             if (json.orders.length === 1) {
                 renderDetail(json.orders[0]);
             } else {
                 renderOrderList(json.orders);
             }
         } catch (e) {
-            console.error('❌ Search error:', e.message);
             if (msgEl) {
                 msgEl.textContent = e.message || 'Gagal mencari pesanan.';
                 msgEl.style.display = 'block';
@@ -168,5 +155,86 @@
         }
     }
 
-    // ... (sisanya sama seperti sebelumnya)
+    async function loadByOrderId(orderId) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/check-status?orderId=${encodeURIComponent(orderId)}`);
+            const json = await res.json();
+            if (!json.success) throw new Error(json.message);
+            renderDetail({
+                orderId: json.orderId,
+                productName: json.productName,
+                qty: json.qty,
+                totalPrice: json.totalPrice,
+                paymentType: json.paymentType,
+                paymentChannel: json.paymentChannel,
+                shippingStatus: json.shippingStatus,
+                cnoteNo: json.cnoteNo,
+            });
+        } catch (e) {
+            showOnly('search-card');
+            const msgEl = $('#search-msg');
+            if (msgEl) {
+                msgEl.textContent = 'Order tidak ditemukan, coba cari lewat nomor HP.';
+                msgEl.style.display = 'block';
+            }
+        }
+    }
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchBtn = $('#search-btn');
+        const phoneInput = $('#phone-input');
+
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
+                const phone = phoneInput ? phoneInput.value.trim() : '';
+                if (phone.length < 8) {
+                    const msgEl = $('#search-msg');
+                    if (msgEl) {
+                        msgEl.textContent = 'Nomor HP tidak valid (minimal 8 digit).';
+                        msgEl.style.display = 'block';
+                    }
+                    return;
+                }
+                searchByPhone(phone);
+            });
+        }
+
+        if (phoneInput) {
+            phoneInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const btn = $('#search-btn');
+                    if (btn) btn.click();
+                }
+            });
+        }
+
+        const backToSearch = $('#back-to-search');
+        if (backToSearch) {
+            backToSearch.addEventListener('click', () => showOnly('search-card'));
+        }
+
+        const backToList = $('#back-to-list');
+        if (backToList) {
+            backToList.addEventListener('click', () => {
+                if (cameFromOrderParam) {
+                    window.location.href = './index.html';
+                    return;
+                }
+                const phone = phoneInput ? phoneInput.value.trim() : '';
+                if (phone) searchByPhone(phone);
+                else showOnly('search-card');
+            });
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const orderIdParam = params.get('order');
+        if (orderIdParam) {
+            cameFromOrderParam = true;
+            loadByOrderId(orderIdParam);
+        } else {
+            showOnly('search-card');
+        }
+    });
+
 })();
