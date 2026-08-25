@@ -1,18 +1,18 @@
 // ============================================================
 // api/lib/sheets.js
 // Database via Google Sheets. Tab WAJIB bernama: Orders
-// Dilengkapi cache & retry
+// Dilengkapi dengan retry mechanism & cache
 // ============================================================
 
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
-// ===== KOLOM (tambahkan 'ongkir' dan 'voucher_dipakai') =====
+// ===== HEADER KOLOM (TAMBAH: ongkir & voucher_dipakai) =====
 const ORDER_HEADERS = [
   'order_id',
   'created_at',
   'customer_name',
-  'customer_phone',      // disimpan sebagai STRING (bisa mulai 0)
+  'customer_phone',
   'full_address',
   'destination_address_id',
   'product_name',
@@ -31,11 +31,12 @@ const ORDER_HEADERS = [
   'cnote_no',
   'sudah_dikirim',
   'sudah_diterima',
-  'ongkir',              // <-- BARU
-  'voucher_dipakai',     // <-- BARU
   'notes',
+  'ongkir',           // ← BARU: biaya ongkir
+  'voucher_dipakai',  // ← BARU: TRUE/FALSE
 ];
 
+// ===== CACHE =====
 let sheetCache = null;
 let sheetCacheTime = 0;
 const CACHE_TTL = 60000; // 1 menit
@@ -45,7 +46,7 @@ function getDoc() {
   const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
   const sheetId = process.env.GOOGLE_SHEET_ID;
   if (!email || !key || !sheetId) {
-    throw new Error('Google Sheets belum dikonfigurasi.');
+    throw new Error('Google Sheets belum dikonfigurasi. Cek GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY / GOOGLE_SHEET_ID.');
   }
   const jwt = new JWT({ email, key, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
   return new GoogleSpreadsheet(sheetId, jwt);
@@ -55,7 +56,7 @@ async function getOrdersSheet(retryCount = 0) {
   try {
     const now = Date.now();
     if (sheetCache && (now - sheetCacheTime < CACHE_TTL)) {
-      console.log('📦 Menggunakan cache sheet');
+      console.log('📦 Menggunakan cache sheet (1 menit)');
       return sheetCache;
     }
 
@@ -71,8 +72,18 @@ async function getOrdersSheet(retryCount = 0) {
         gridProperties: { rowCount: 1000, columnCount: ORDER_HEADERS.length + 4 },
       });
     } else {
-      // Cek apakah header perlu diupdate (tambahan kolom)
+      // Pastikan header sudah lengkap (migrasi kolom baru)
       await sheet.loadHeaderRow().catch(async () => sheet.setHeaderRow(ORDER_HEADERS));
+      // Cek apakah kolom ongkir & voucher_dipakai ada, jika tidak tambahkan
+      const currentHeaders = sheet.headerValues || [];
+      if (!currentHeaders.includes('ongkir')) {
+        // Tambahkan kolom di akhir
+        const lastCol = sheet.columnCount || currentHeaders.length;
+        await sheet.addColumns(lastCol + 1, ['ongkir']);
+        await sheet.addColumns(lastCol + 2, ['voucher_dipakai']);
+        // Reload header
+        await sheet.loadHeaderRow();
+      }
     }
 
     sheetCache = sheet;
@@ -82,10 +93,11 @@ async function getOrdersSheet(retryCount = 0) {
     if (err.message && (err.message.includes('429') || err.message.includes('Quota'))) {
       if (retryCount < 5) {
         const delay = Math.pow(2, retryCount) * 2000;
-        console.log(`⏳ Retry ${retryCount+1}/5 in ${delay/1000}s...`);
+        console.log(`⏳ Rate limit (429) hit! Retry in ${delay/1000}s... (attempt ${retryCount + 1}/5)`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return getOrdersSheet(retryCount + 1);
       }
+      console.error('❌ Quota exceeded after 5 retries.');
       throw new Error('Google Sheets quota exceeded. Silakan coba lagi nanti.');
     }
     throw err;
@@ -95,7 +107,7 @@ async function getOrdersSheet(retryCount = 0) {
 function invalidateSheetCache() {
   sheetCache = null;
   sheetCacheTime = 0;
-  console.log('🔄 Cache invalidated');
+  console.log('🔄 Cache sheet di-invalidate (setelah write)');
 }
 
 async function createOrderRow(orderData) {
@@ -114,12 +126,12 @@ async function findOrderByOrderId(orderId) {
 async function findOrdersByPhone(phone) {
   const sheet = await getOrdersSheet();
   const rows = await sheet.getRows();
-  // Cari dengan pencocokan yang flexible (bisa dengan atau tanpa leading 0)
-  const cleanPhone = String(phone).replace(/\D/g, '');
+  // Pastikan phone dibandingkan sebagai string (bisa dengan leading zero)
+  const clean = String(phone).replace(/\D/g, '');
   return rows
     .filter((r) => {
       const rowPhone = String(r.get('customer_phone') || '').replace(/\D/g, '');
-      return rowPhone === cleanPhone;
+      return rowPhone === clean;
     })
     .sort((a, b) => new Date(b.get('created_at')) - new Date(a.get('created_at')));
 }
