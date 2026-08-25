@@ -1,0 +1,10 @@
+{
+  "name": "spray-tidur-landing",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Landing page Spray Tidur - Integrasi Mengantar + Cashi.id + Google Sheets",
+  "dependencies": {
+    "google-spreadsheet": "^4.1.4",
+    "google-auth-library": "^9.14.1"
+  }
+}

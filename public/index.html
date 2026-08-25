@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Spray Tidur - BPOM HALAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="./assets/css/style.css" />
+    <link rel="icon" type="image/png" href="./assets/img/favicon.png" />
+</head>
+<body>
+
+    <!-- ====== HEADER ====== -->
+    <header class="main-header">
+        <div class="header-left">
+            <a href="#section-landing" class="header-home" id="btn-home"><i class="fas fa-home"></i> Beranda</a>
+        </div>
+        <div class="header-center">
+            <span class="header-brand">Spray Tidur</span>
+        </div>
+        <div class="header-right">
+            <button id="btn-track-header" class="header-track"><i class="fas fa-box"></i> Lacak</button>
+        </div>
+    </header>
+
+    <!-- ====== NOTIFIKASI GIMMICK ====== -->
+    <div id="notification-popup" class="notification-popup" style="display:none;">
+        <div class="notif-content">
+            <span class="notif-icon"><i class="fas fa-shopping-bag"></i></span>
+            <span class="notif-text" id="notif-text">Ahmad Fauzi dari Bandung membeli produk ini 4 menit lalu</span>
+        </div>
+    </div>
+
+    <div id="trust-popup" class="trust-popup" style="display:none;">
+        <div class="trust-content" id="trust-content">
+            <i class="fas fa-check-circle" style="color:#25D366;"></i> Stok Terbatas! Pesan sekarang.
+        </div>
+    </div>
+
+    <!-- ====== MAIN CONTAINER ====== -->
+    <div class="container">
+
+        <!-- ===== SECTION LANDING ===== -->
+        <section id="section-landing" class="section active">
+
+            <!-- Product Header -->
+            <div class="product-header">
+                <div class="product-image-placeholder">
+                    <img src="./assets/img/product.jpg" alt="Spray Tidur" id="product-image" />
+                </div>
+                <h1 class="product-title">SPRAY TIDUR - 100% BPOM RI & HALAL</h1>
+                <p class="product-sub">Spray tidur - BPOM HALAL, aman tidak berbahaya</p>
+
+                <!-- Kelebihan Produk (6 ceklis - 3 kiri 3 kanan) -->
+                <div class="product-benefits">
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> 1 Detik Langsung Tidur!</div>
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> 100% Bahan Alami</div>
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> BPOM & HALAL Terdaftar</div>
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> Aroma Terapi Menenangkan</div>
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> Aman untuk Semua Usia</div>
+                    <div class="benefit-item"><i class="fas fa-check-circle"></i> Garansi Uang Kembali</div>
+                </div>
+            </div>
+
+            <!-- Gimmick Bar -->
+            <div class="gimmick-bar">
+                <div class="gimmick-item">
+                    <i class="fas fa-fire" style="color:#FF5722;"></i>
+                    <span id="sold-counter">10.000+</span> Terjual
+                </div>
+                <div class="gimmick-item">
+                    <i class="fas fa-clock" style="color:#FF9800;"></i>
+                    <span id="countdown-timer">29:59</span> Gratis Ongkir
+                </div>
+            </div>
+
+            <!-- Pilih Paket -->
+            <div class="package-section">
+                <h3>Pilih Paket:</h3>
+                <div class="package-box">
+                    <div class="package-info">
+                        <span class="package-name">Spray tidur - Beli 2 Lebih murah</span>
+                        <div class="price-display">
+                            <span class="price-original" id="price-original">Rp 209.000</span>
+                            <span class="price-discount" id="price-discount">Rp 209.000</span>
+                        </div>
+                    </div>
+                    <div class="qty-control">
+                        <button id="btn-minus"><i class="fas fa-minus"></i></button>
+                        <span id="qty-display">1</span>
+                        <button id="btn-plus"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                <div class="package-note">* Diskon bertingkat: 2pcs 10%, 3pcs 12%, 4pcs 14%, 5pcs 15%</div>
+            </div>
+
+            <!-- Form -->
+            <div class="form-section">
+                <h3>Lengkapi Data:</h3>
+                <form id="order-form" onsubmit="return false;">
+                    <input type="text" id="full-name" placeholder="Nama Lengkap" required />
+                    <input type="tel" id="phone" placeholder="No HP (contoh: 081234567890)" required />
+
+                    <!-- Pilih Kecamatan (auto-complete dari Mengantar) -->
+                    <div class="search-wrapper">
+                        <input type="text" id="kecamatan-search" placeholder="Cari Kecamatan..." autocomplete="off" />
+                        <div id="kecamatan-results" class="search-results"></div>
+                    </div>
+                    <input type="hidden" id="provinsi" />
+                    <input type="hidden" id="kabupaten" />
+                    <input type="hidden" id="kecamatan" />
+                    <input type="hidden" id="destination-address-id" />
+
+                    <textarea id="alamat-lengkap" rows="2" placeholder="Alamat lengkap (Jalan, RT/RW, dll)" required></textarea>
+                </form>
+            </div>
+
+            <!-- Metode Pembayaran (di-render oleh JS) -->
+            <div class="payment-section">
+                <h3>Metode Pembayaran:</h3>
+                <div class="payment-list" id="payment-list"></div>
+            </div>
+
+            <!-- Pilihan Kurir (di-render oleh JS) -->
+            <div class="courier-section">
+                <h3>Pilih Kurir:</h3>
+                <div class="courier-list" id="courier-list"></div>
+            </div>
+
+            <!-- Rincian Pesanan -->
+            <div class="order-summary">
+                <h3>RINCIAN PESANAN:</h3>
+                <div class="summary-row"><span>Subtotal</span><span id="summary-subtotal">Rp 209.000</span></div>
+                <div class="summary-row" id="shipping-row"><span>Ongkir</span><span id="summary-shipping">Rp 15.000</span></div>
+                <div class="voucher-row"><button id="btn-voucher" class="voucher-btn"><i class="fas fa-ticket-alt"></i> Gunakan Voucher Gratis Ongkir</button></div>
+                <div class="summary-row total-row"><span><strong>Total</strong></span><span id="summary-total"><strong>Rp 224.000</strong></span></div>
+            </div>
+
+            <!-- Tombol Aksi -->
+            <div class="action-buttons">
+                <button id="btn-checkout" class="btn-primary"><i class="fas fa-shopping-cart"></i> Pesan Sekarang!</button>
+                <button id="btn-track" class="btn-secondary"><i class="fas fa-search"></i> Lacak Pesanan</button>
+            </div>
+
+            <!-- Testimoni (di-render oleh JS) -->
+            <div class="testimonial-section">
+                <h3>Testimoni:</h3>
+                <div id="testimoni-container"></div>
+                <div class="testimonial-view-all">
+                    <span>Lihat semua ></span>
+                    <span class="testimonial-count">(1.234+ ulasan)</span>
+                </div>
+            </div>
+
+            <!-- Powered By -->
+            <div class="powered-by">
+                <span>Powered by</span>
+                <img src="./assets/img/logo-scalev.png" alt="Scalev" class="powered-logo" />
+            </div>
+
+        </section>
+
+        <!-- ===== SECTION PEMBAYARAN ===== -->
+        <section id="section-payment" class="section">
+            <div class="payment-page">
+                <h2><i class="fas fa-credit-card"></i> Selesaikan Pembayaran</h2>
+                <div id="payment-instruction" class="payment-instruction"></div>
+                <div id="payment-status" class="payment-status">
+                    <p>Menunggu pembayaran...</p>
+                    <div class="spinner"></div>
+                </div>
+                <button id="btn-wa-payment" class="btn-success" style="display:none;"><i class="fab fa-whatsapp"></i> Saya Sudah Bayar</button>
+                <button id="btn-back-home" class="btn-secondary">Kembali</button>
+            </div>
+        </section>
+
+        <!-- ===== SECTION DIKEMAS ===== -->
+        <section id="section-packed" class="section">
+            <div class="packed-page">
+                <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+                <h2>Pesanan Dikemas!</h2>
+                <div class="order-details">
+                    <p><strong>Order ID:</strong> <span id="packed-order-id">-</span></p>
+                    <p><strong>Resi:</strong> <span id="packed-resi">-</span></p>
+                    <p><strong>Kurir:</strong> <span id="packed-courier">-</span></p>
+                    <p><strong>Total:</strong> Rp <span id="packed-total">0</span></p>
+                    <p><strong>Metode:</strong> <span id="packed-method">-</span></p>
+                    <p><strong>Status:</strong> <span class="badge">DIKEMAS</span></p>
+                </div>
+                <div class="packed-actions">
+                    <button id="btn-wa-packed" class="btn-success"><i class="fab fa-whatsapp"></i> Kirim WA ke Pembeli</button>
+                    <button id="btn-confirm-shipped" class="btn-primary"><i class="fas fa-truck"></i> Konfirmasi Sudah Di Drop</button>
+                </div>
+                <button id="btn-back-home-packed" class="btn-secondary">Kembali ke Beranda</button>
+            </div>
+        </section>
+
+        <!-- ===== SECTION TRACKING ===== -->
+        <section id="section-tracking" class="section">
+            <div class="tracking-page">
+                <h2><i class="fas fa-map-pin"></i> Lacak Pesanan</h2>
+                <div class="tracking-form">
+                    <input type="tel" id="track-phone" placeholder="Masukkan No HP (contoh: 081234567890)" required />
+                    <button id="btn-track-submit" class="btn-primary"><i class="fas fa-search"></i> Cari</button>
+                </div>
+                <div id="tracking-result" class="tracking-result" style="display:none;"></div>
+                <button id="btn-back-home-track" class="btn-secondary">Kembali</button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ====== FOOTER STICKY ====== -->
+    <footer class="sticky-footer" id="sticky-footer">
+        <div class="footer-price">
+            <div class="footer-price-left">
+                <span class="footer-price-original" id="footer-original">Rp 209.000</span>
+                <span class="footer-price-discount" id="footer-discount">Rp 209.000</span>
+            </div>
+            <button id="btn-checkout-footer" class="btn-primary-footer"><i class="fas fa-shopping-cart"></i> Pesan Sekarang!</button>
+        </div>
+    </footer>
+
+    <script src="./assets/js/app.js"></script>
+</body>
+</html>
