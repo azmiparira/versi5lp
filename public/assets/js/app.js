@@ -1,6 +1,6 @@
 // ============================================================
 // app.js — Spray Tidur Landing Page
-// FULL VERSION — semua perbaikan
+// FULL VERSION dengan localStorage, polling resi, total_amount dari Cashi
 // ============================================================
 
 (function() {
@@ -29,8 +29,11 @@
     let selectedPayment = 'COD';
     let selectedCourier = 'Direkomendasikan';
     let isConfigLoaded = false;
+    let paymentPollTimer = null;
 
-    // ===== HARGA =====
+    // ============================================================
+    // 1. HARGA
+    // ============================================================
     function getDiscountedPrice(qty) {
         let disc = 0;
         if (qty === 1) disc = 0;
@@ -51,42 +54,31 @@
 
         // Harga asli (coret)
         const priceOriginal = document.getElementById('price-original');
-        if (priceOriginal) {
-            priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
-        }
+        if (priceOriginal) priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
 
-        // Harga diskon
         const priceDiscount = document.getElementById('price-discount');
-        if (priceDiscount) {
-            priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
-        }
+        if (priceDiscount) priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
 
-        // Qty display
         const qtyDisplay = document.getElementById('qty-display');
         if (qtyDisplay) qtyDisplay.textContent = qty;
 
-        // Subtotal
         const summarySubtotal = document.getElementById('summary-subtotal');
         if (summarySubtotal) summarySubtotal.textContent = 'Rp ' + finalTotal.toLocaleString();
 
-        // Ongkir
         const summaryShipping = document.getElementById('summary-shipping');
         if (summaryShipping) {
             summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
         }
 
-        // Total
         const summaryTotal = document.getElementById('summary-total');
         if (summaryTotal) summaryTotal.innerHTML = '<strong>Rp ' + total.toLocaleString() + '</strong>';
 
-        // Footer: harga asli (coret) dan harga total
         const footerOriginal = document.getElementById('footer-original');
         if (footerOriginal) footerOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
 
         const footerDiscount = document.getElementById('footer-discount');
         if (footerDiscount) footerDiscount.textContent = 'Rp ' + total.toLocaleString();
 
-        // Sticky
         const stickyPrice = document.getElementById('sticky-price');
         if (stickyPrice) stickyPrice.textContent = 'Rp ' + total.toLocaleString();
 
@@ -101,7 +93,9 @@
         }
     }
 
-    // ===== LOAD CONFIG =====
+    // ============================================================
+    // 2. LOAD CONFIG
+    // ============================================================
     async function loadConfig() {
         try {
             const response = await fetch(`${CONFIG.API_BASE_URL}/config`);
@@ -117,13 +111,14 @@
             }
         } catch (err) {
             console.warn('Gagal load config:', err);
-            // Pakai default
             isConfigLoaded = true;
             updatePriceDisplay();
         }
     }
 
-    // ===== SEARCH KECAMATAN =====
+    // ============================================================
+    // 3. SEARCH KECAMATAN
+    // ============================================================
     function initSearchKecamatan() {
         const searchInput = document.getElementById('kecamatan-search');
         const resultsDiv = document.getElementById('kecamatan-results');
@@ -193,7 +188,9 @@
         });
     }
 
-    // ===== RENDER PAYMENT & COURIER =====
+    // ============================================================
+    // 4. RENDER PAYMENT & COURIER
+    // ============================================================
     function renderPaymentOptions() {
         const container = document.getElementById('payment-list');
         if (!container) return;
@@ -268,7 +265,9 @@
         });
     }
 
-    // ===== TESTIMONI =====
+    // ============================================================
+    // 5. RENDER TESTIMONI
+    // ============================================================
     function renderTestimonials() {
         const container = document.getElementById('testimoni-container');
         if (!container) return;
@@ -338,7 +337,9 @@
         });
     }
 
-    // ===== SHOW SECTION =====
+    // ============================================================
+    // 6. SHOW SECTION
+    // ============================================================
     function showSection(id) {
         Object.keys(sections).forEach(key => {
             if (sections[key]) {
@@ -348,12 +349,14 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ===== PAYMENT INSTRUCTION =====
-    function getPaymentInstructions(paymentMethod, cashiResp) {
+    // ============================================================
+    // 7. PAYMENT INSTRUCTIONS
+    // ============================================================
+    function getPaymentInstructions(paymentMethod) {
         const instructions = {
             'QRIS': [
                 'Screenshot kode QR yang tampil',
-                'Masuk ke aplikasi dompet digital (Dana, Gopay, Ovo, Shopeepay, Linkaja, dll)',
+                'Masuk ke aplikasi dompet digital (Dana, Gopay, Ovo, ShopeePay, Linkaja, dll)',
                 'Buka Scan QR pada aplikasi dompet digital anda',
                 'Scan QR yang muncul pada halaman pembelian anda',
                 'Akan muncul detail transaksi. Pastikan data transaksi sudah sesuai',
@@ -423,7 +426,9 @@
         return instructions[paymentMethod] || ['Silakan ikuti petunjuk pembayaran yang diberikan.'];
     }
 
-    // ===== HANDLE CHECKOUT =====
+    // ============================================================
+    // 8. CHECKOUT
+    // ============================================================
     async function handleCheckout() {
         const nama = document.getElementById('full-name').value.trim();
         let noHp = document.getElementById('phone').value.trim();
@@ -437,7 +442,6 @@
         if (!noHp || noHp.length < 8) { alert('Nomor HP tidak valid!'); return; }
         if (!kecamatan || !alamat || !destId) { alert('Harap pilih kecamatan dari daftar dan isi alamat lengkap!'); return; }
 
-        // Hapus karakter non-digit tapi pertahankan leading zero
         noHp = noHp.replace(/\D/g, '');
 
         const qty = currentQty;
@@ -450,7 +454,7 @@
         try {
             const payload = {
                 customerName: nama,
-                customerPhone: noHp, // string dengan leading zero
+                customerPhone: noHp,
                 province: provinsi,
                 city: kabupaten,
                 district: kecamatan,
@@ -480,7 +484,7 @@
                 orderId: result.orderId,
                 nama: nama,
                 noHp: noHp,
-                totalHarga: total,
+                totalHarga: result.totalPrice || total,
                 kurir: selectedCourier,
                 metodeBayar: selectedPayment,
                 resi: result.resi || '-',
@@ -503,14 +507,30 @@
         }
     }
 
-    // ===== SHOW PAYMENT PAGE =====
+    // ============================================================
+    // 9. SHOW PAYMENT PAGE (dengan localStorage)
+    // ============================================================
     function showPaymentPage(cashiResp, orderData) {
+        // Simpan ke sessionStorage agar bisa di-restore saat refresh
+        try {
+            sessionStorage.setItem('pendingPayment', JSON.stringify({
+                orderId: orderData.orderId,
+                total: cashiResp.total_amount || orderData.totalHarga,
+                method: orderData.metodeBayar,
+                cashiResp: cashiResp,
+                orderData: orderData,
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
+
         showSection('payment');
         const instr = document.getElementById('payment-instruction');
         const statusDiv = document.getElementById('payment-status');
         const waBtn = document.getElementById('btn-wa-payment');
 
-        let html = `<p><strong>Total:</strong> Rp ${orderData.totalHarga.toLocaleString()}</p>`;
+        const totalBayar = cashiResp.total_amount || orderData.totalHarga;
+
+        let html = `<p><strong>Total:</strong> Rp ${totalBayar.toLocaleString()}</p>`;
         html += `<p><strong>Order ID:</strong> ${orderData.orderId}</p>`;
 
         // Tampilkan QR/VA/Retail
@@ -524,8 +544,8 @@
             html += `<pre>${JSON.stringify(cashiResp, null, 2)}</pre>`;
         }
 
-        // === TAMBAHKAN TATA CARA PEMBAYARAN ===
-        const steps = getPaymentInstructions(orderData.metodeBayar, cashiResp);
+        // Tambahkan tata cara bayar
+        const steps = getPaymentInstructions(orderData.metodeBayar);
         html += `<div style="margin-top:16px; padding-top:12px; border-top:1px solid #eee;">
             <p style="font-weight:600; margin-bottom:8px;">📌 Cara Bayar:</p>
             <ol style="padding-left:20px; font-size:13px; line-height:1.8;">`;
@@ -541,32 +561,40 @@
         }
         if (waBtn) waBtn.style.display = 'none';
 
+        // Hentikan polling sebelumnya
+        if (paymentPollTimer) clearInterval(paymentPollTimer);
+
         let pollCount = 0;
         const maxPolls = 30; // 30 x 10 detik = 5 menit
-        const interval = setInterval(async () => {
+        paymentPollTimer = setInterval(async () => {
             pollCount++;
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/check-status?orderId=${orderData.orderId}`);
                 const result = await response.json();
                 if (result.success && result.paymentStatus === 'PAID') {
-                    clearInterval(interval);
+                    clearInterval(paymentPollTimer);
+                    paymentPollTimer = null;
                     if (statusDiv) {
                         statusDiv.innerHTML = `<p style="color:#25D366;font-weight:bold;">✅ Pembayaran berhasil!</p>`;
                     }
                     if (waBtn) {
                         waBtn.style.display = 'inline-block';
                         waBtn.onclick = () => {
+                            // Hapus pending state
+                            sessionStorage.removeItem('pendingPayment');
                             showPackedPage(orderData);
                         };
                     }
                 } else if (pollCount >= maxPolls) {
-                    clearInterval(interval);
+                    clearInterval(paymentPollTimer);
+                    paymentPollTimer = null;
                     if (statusDiv) {
                         statusDiv.innerHTML = `<p style="color:red;">⏰ Waktu habis. Jika sudah bayar, klik tombol di bawah.</p>`;
                     }
                     if (waBtn) {
                         waBtn.style.display = 'inline-block';
                         waBtn.onclick = () => {
+                            sessionStorage.removeItem('pendingPayment');
                             showPackedPage(orderData);
                         };
                     }
@@ -576,10 +604,16 @@
             }
         }, 10000);
 
-        document.getElementById('btn-back-home').onclick = () => showSection('landing');
+        document.getElementById('btn-back-home').onclick = () => {
+            sessionStorage.removeItem('pendingPayment');
+            if (paymentPollTimer) clearInterval(paymentPollTimer);
+            showSection('landing');
+        };
     }
 
-    // ===== SHOW PACKED PAGE =====
+    // ============================================================
+    // 10. SHOW PACKED PAGE (dengan polling resi & sembunyikan tombol)
+    // ============================================================
     function showPackedPage(data) {
         showSection('packed');
         const elements = {
@@ -604,19 +638,60 @@
         }
 
         const btnConfirm = document.getElementById('btn-confirm-shipped');
+        // Sembunyikan tombol konfirmasi jika NON-COD (karena akan diupdate otomatis)
         if (btnConfirm) {
-            btnConfirm.onclick = () => {
-                const pesanAdmin = `Halo Admin,\n\nSaya sudah mengantarkan paket ke outlet ekspedisi.\nOrder ID: ${data.orderId}\nResi: ${data.resi}\nKurir: ${data.kurir}\n\nMohon update status di spreadsheet menjadi "sudah_dikirim = TRUE".`;
-                const url = `https://wa.me/${CONFIG.WA_ADMIN}?text=${encodeURIComponent(pesanAdmin)}`;
-                window.open(url, '_blank');
-                alert('✅ Kirim pesan ke admin. Jangan lupa update spreadsheet!');
-            };
+            if (!data.isCOD) {
+                btnConfirm.style.display = 'none';
+                // Polling untuk cek resi
+                pollResiAndUpdate(data.orderId);
+            } else {
+                btnConfirm.style.display = 'block';
+                btnConfirm.onclick = () => {
+                    const pesanAdmin = `Halo Admin,\n\nSaya sudah mengantarkan paket ke outlet ekspedisi.\nOrder ID: ${data.orderId}\nResi: ${data.resi}\nKurir: ${data.kurir}\n\nMohon update status di spreadsheet menjadi "sudah_dikirim = TRUE".`;
+                    const url = `https://wa.me/${CONFIG.WA_ADMIN}?text=${encodeURIComponent(pesanAdmin)}`;
+                    window.open(url, '_blank');
+                    alert('✅ Kirim pesan ke admin. Jangan lupa update spreadsheet!');
+                };
+            }
         }
 
-        document.getElementById('btn-back-home-packed').onclick = () => showSection('landing');
+        document.getElementById('btn-back-home-packed').onclick = () => {
+            sessionStorage.removeItem('pendingPayment');
+            showSection('landing');
+        };
     }
 
-    // ===== HANDLE TRACKING =====
+    // ============================================================
+    // 11. POLLING RESI (untuk NON-COD)
+    // ============================================================
+    async function pollResiAndUpdate(orderId) {
+        let attempts = 0;
+        const maxAttempts = 30; // 30 x 5 detik = 150 detik (2.5 menit)
+        const interval = setInterval(async () => {
+            attempts++;
+            try {
+                const res = await fetch(`${CONFIG.API_BASE_URL}/check-status?orderId=${orderId}`);
+                const json = await res.json();
+                if (json.success && json.paymentStatus === 'PAID' && json.cnoteNo && json.cnoteNo !== '-') {
+                    // Resi sudah ada, update halaman
+                    const resiEl = document.getElementById('packed-resi');
+                    if (resiEl) resiEl.textContent = json.cnoteNo;
+                    clearInterval(interval);
+                    // Ubah status badge
+                    const badge = document.querySelector('.badge');
+                    if (badge) badge.textContent = 'PAID - RESI READY';
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                }
+            } catch (e) {
+                console.warn('Polling resi error:', e);
+            }
+        }, 5000);
+    }
+
+    // ============================================================
+    // 12. HANDLE TRACKING
+    // ============================================================
     async function handleTracking() {
         const noHp = document.getElementById('track-phone').value.trim();
         if (!noHp) {
@@ -672,7 +747,9 @@
         }
     }
 
-    // ===== COUNTDOWN =====
+    // ============================================================
+    // 13. COUNTDOWN
+    // ============================================================
     function startCountdown() {
         let totalSeconds = 1800;
         function updateTimer() {
@@ -689,7 +766,9 @@
         setInterval(updateTimer, 1000);
     }
 
-    // ===== GIMMICKS =====
+    // ============================================================
+    // 14. GIMMICKS
+    // ============================================================
     function startGimmicks() {
         let sold = 10234;
         setInterval(() => {
@@ -760,9 +839,40 @@
         setTimeout(showTrustPopup, 3000);
     }
 
-    // ===== INIT =====
+    // ============================================================
+    // 15. RESTORE PENDING PAYMENT (saat load)
+    // ============================================================
+    function restorePendingPayment() {
+        try {
+            const pending = sessionStorage.getItem('pendingPayment');
+            if (pending) {
+                const data = JSON.parse(pending);
+                // Cek apakah masih dalam waktu 30 menit
+                if (Date.now() - data.timestamp < 30 * 60 * 1000) {
+                    console.log('⏳ Restoring pending payment:', data.orderId);
+                    // Tampilkan halaman payment dengan data tersimpan
+                    showPaymentPage(data.cashiResp, data.orderData);
+                    return true;
+                } else {
+                    sessionStorage.removeItem('pendingPayment');
+                }
+            }
+        } catch(e) {}
+        return false;
+    }
+
+    // ============================================================
+    // 16. INIT
+    // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Load config dulu sebelum render
+        // Cek apakah ada pending payment yang harus direstore
+        const restored = restorePendingPayment();
+        if (restored) {
+            // Jika berhasil restore, tidak perlu load config lagi (sudah di load)
+            return;
+        }
+
+        // Load config
         loadConfig();
 
         // QTY
