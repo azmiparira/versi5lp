@@ -1,9 +1,16 @@
 // api/address-search.js
-// GET /api/address-search?keyword=xxx
-
 const { searchAddress } = require('./lib/mengantar');
 
 module.exports = async (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
@@ -15,6 +22,7 @@ module.exports = async (req, res) => {
 
   try {
     const data = await searchAddress(keyword.trim());
+    // Pastikan response sesuai dengan yang diharapkan frontend
     res.status(200).json({ success: true, data });
   } catch (err) {
     console.error('address-search error:', err);
