@@ -45,82 +45,83 @@
         return Math.round(total - (total * disc / 100));
     }
 
+    // ===== PERBAIKAN: updatePriceDisplay dengan coretan total + ongkir =====
     function updatePriceDisplay() {
         const qty = currentQty;
         const originalTotal = productPrice * qty;
         const finalTotal = getDiscountedPrice(qty);
         const shipping = voucherUsed ? 0 : shippingFee;
-        const totalDiscounted = finalTotal + shipping; // harga setelah diskon ongkir
-        const totalOriginal = finalTotal + shippingFee; // harga sebelum diskon ongkir (asli)
+        const totalDiscounted = finalTotal + shipping;           // harga setelah diskon ongkir
+        const totalOriginal = finalTotal + shippingFee;         // harga sebelum diskon ongkir (asli)
 
-    // Harga asli produk (coret)
-    const priceOriginal = document.getElementById('price-original');
-    if (priceOriginal) priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+        // Harga asli produk (coret)
+        const priceOriginal = document.getElementById('price-original');
+        if (priceOriginal) priceOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
 
-    // Harga produk setelah diskon produk
-    const priceDiscount = document.getElementById('price-discount');
-    if (priceDiscount) priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
+        // Harga produk setelah diskon produk
+        const priceDiscount = document.getElementById('price-discount');
+        if (priceDiscount) priceDiscount.textContent = 'Rp ' + finalTotal.toLocaleString();
 
-    // Qty
-    const qtyDisplay = document.getElementById('qty-display');
-    if (qtyDisplay) qtyDisplay.textContent = qty;
+        // Qty
+        const qtyDisplay = document.getElementById('qty-display');
+        if (qtyDisplay) qtyDisplay.textContent = qty;
 
-    // Subtotal (setelah diskon produk)
-    const summarySubtotal = document.getElementById('summary-subtotal');
-    if (summarySubtotal) summarySubtotal.textContent = 'Rp ' + finalTotal.toLocaleString();
+        // Subtotal (setelah diskon produk)
+        const summarySubtotal = document.getElementById('summary-subtotal');
+        if (summarySubtotal) summarySubtotal.textContent = 'Rp ' + finalTotal.toLocaleString();
 
-    // Ongkir
-    const summaryShipping = document.getElementById('summary-shipping');
-    if (summaryShipping) {
-        summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
-    }
+        // Ongkir
+        const summaryShipping = document.getElementById('summary-shipping');
+        if (summaryShipping) {
+            summaryShipping.textContent = voucherUsed ? 'Rp 0 (Gratis)' : 'Rp ' + shippingFee.toLocaleString();
+        }
 
-    // TOTAL: tampilkan coret jika voucher digunakan
-    const summaryTotal = document.getElementById('summary-total');
-    if (summaryTotal) {
-        if (voucherUsed) {
-            // Tampilkan coret pada total asli (finalTotal + shippingFee)
-            summaryTotal.innerHTML = `
-                <span style="text-decoration:line-through;color:#999;font-size:14px;margin-right:8px;">
-                    Rp ${totalOriginal.toLocaleString()}
-                </span>
-                <strong>Rp ${totalDiscounted.toLocaleString()}</strong>
-            `;
-        } else {
-            summaryTotal.innerHTML = `<strong>Rp ${totalDiscounted.toLocaleString()}</strong>`;
+        // ===== TOTAL: tampilkan coret jika voucher digunakan =====
+        const summaryTotal = document.getElementById('summary-total');
+        if (summaryTotal) {
+            if (voucherUsed) {
+                // Tampilkan coret pada total asli (finalTotal + shippingFee)
+                summaryTotal.innerHTML = `
+                    <span style="text-decoration:line-through;color:#999;font-size:14px;margin-right:8px;">
+                        Rp ${totalOriginal.toLocaleString()}
+                    </span>
+                    <strong>Rp ${totalDiscounted.toLocaleString()}</strong>
+                `;
+            } else {
+                summaryTotal.innerHTML = `<strong>Rp ${totalDiscounted.toLocaleString()}</strong>`;
+            }
+        }
+
+        // Footer: harga asli (coret) dan harga diskon
+        const footerOriginal = document.getElementById('footer-original');
+        if (footerOriginal) {
+            if (voucherUsed) {
+                footerOriginal.textContent = 'Rp ' + totalOriginal.toLocaleString();
+            } else {
+                footerOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
+            }
+        }
+
+        const footerDiscount = document.getElementById('footer-discount');
+        if (footerDiscount) footerDiscount.textContent = 'Rp ' + totalDiscounted.toLocaleString();
+
+        // Sticky
+        const stickyPrice = document.getElementById('sticky-price');
+        if (stickyPrice) stickyPrice.textContent = 'Rp ' + totalDiscounted.toLocaleString();
+
+        const stickyStrike = document.getElementById('sticky-strike');
+        if (stickyStrike) {
+            if (voucherUsed && totalOriginal > totalDiscounted) {
+                stickyStrike.style.display = 'block';
+                stickyStrike.textContent = 'Rp ' + totalOriginal.toLocaleString();
+            } else if (originalTotal > finalTotal) {
+                stickyStrike.style.display = 'block';
+                stickyStrike.textContent = 'Rp ' + originalTotal.toLocaleString();
+            } else {
+                stickyStrike.style.display = 'none';
+            }
         }
     }
-
-    // Footer: harga asli (coret) dan harga diskon
-    const footerOriginal = document.getElementById('footer-original');
-    if (footerOriginal) {
-        if (voucherUsed) {
-            footerOriginal.textContent = 'Rp ' + totalOriginal.toLocaleString();
-        } else {
-            footerOriginal.textContent = 'Rp ' + originalTotal.toLocaleString();
-        }
-    }
-
-    const footerDiscount = document.getElementById('footer-discount');
-    if (footerDiscount) footerDiscount.textContent = 'Rp ' + totalDiscounted.toLocaleString();
-
-    // Sticky
-    const stickyPrice = document.getElementById('sticky-price');
-    if (stickyPrice) stickyPrice.textContent = 'Rp ' + totalDiscounted.toLocaleString();
-
-    const stickyStrike = document.getElementById('sticky-strike');
-    if (stickyStrike) {
-        if (voucherUsed && totalOriginal > totalDiscounted) {
-            stickyStrike.style.display = 'block';
-            stickyStrike.textContent = 'Rp ' + totalOriginal.toLocaleString();
-        } else if (originalTotal > finalTotal) {
-            stickyStrike.style.display = 'block';
-            stickyStrike.textContent = 'Rp ' + originalTotal.toLocaleString();
-        } else {
-            stickyStrike.style.display = 'none';
-        }
-    }
-}
 
     // ============================================================
     // 2. LOAD CONFIG
@@ -367,7 +368,7 @@
     }
 
     // ============================================================
-    // 6. SHOW SECTION
+    // 6. SHOW SECTION — Sembunyikan sticky footer di payment/packed
     // ============================================================
     function showSection(id) {
         Object.keys(sections).forEach(key => {
@@ -375,6 +376,17 @@
                 sections[key].classList.toggle('active', key === id);
             }
         });
+
+        // ===== SEMBUNYIKAN STICKY FOOTER DI PAYMENT/PACKED =====
+        const footer = document.getElementById('sticky-footer');
+        if (footer) {
+            if (id === 'payment' || id === 'packed') {
+                footer.style.display = 'none';
+            } else {
+                footer.style.display = 'block';
+            }
+        }
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
