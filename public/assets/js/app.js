@@ -319,27 +319,27 @@
             {
                 name: 'Budi Santoso',
                 stars: 5,
-                text: 'Bagus banget! Aroma nya menenangkan, langsung tidur nyenyak. Udah beli 3 kali dan selalu puas. Cepat dikirim, packing aman. Recommended!',
+                text: 'Awalnya ragu tp pas liat udah bpom sm halal jd berani coba buat si kecil (2th). anakku emg susah bgt tidur malem suka tantrum dulu.. pas dicoba semprot dikit di sprei/bantalnya ternyata ngaruh bgt. aromanya enak ga bikin enek. anak jd cepet merem dan tidur lelap sampe pagi. harga 129rb worth it parah sih, next pasti reorder!',
                 hasPhoto: true,
                 photo: 'testi-produk2.jpg'
             },
             {
                 name: 'Siti Nurhaliza',
                 stars: 5,
-                text: 'Anak saya jadi gampang tidur, ga rewel lagi. Wanginya juga ga nyengat, bikin kamar jadi adem. Pengiriman cepat, puas banget!',
+                text: 'Penolong banget buat anak balitaku umur 1,5 tahun yg susah tidur kalo malem! Kemarin2 bisa sampe jam 12 malem baru bobo, pas disemprotin ini di kamar pas mau tidur.. eh jam 9 udah pules bgt. Mana ramah anak lagi formula nya. Makasih ya seller produknya sangat berfaedah',
                 hasPhoto: true,
                 photo: 'testi-produk3.jpg'
             },
             {
                 name: 'Rizky Fadillah',
                 stars: 5,
-                text: 'Produk asli BPOM, aman. Wangi nya calming, bikin tidur lebih nyenyak. Langsung order lagi buat stok. Mantap!',
+                text: 'Sering pulang larut malam naek motor, bawaannya tegang takut diikutin orang atau begal di jalan. Nyampe rumah pikiran masih kenceng susah tidur. Pas nyoba spray ini di kamar, aromanya langsung bikin rileks seketika, ga sampe 1 detik udah pules banget. Pas bangun pagi badan rasanya seger ga bikin puyeng. Mending bawa ini biar pas nyampe rumah bisa langsung tidur nyenyak daripada kepikiran begal terus!',
                 hasPhoto: false
             },
             {
                 name: 'Andi Wijaya',
                 stars: 4,
-                text: 'Cukup membantu untuk tidur, efeknya lumayan. Mungkin butuh waktu adaptasi, tapi overall bagus. Pengiriman cepat.',
+                text: 'Hasilnya oke banget buat anakku yg umur 3 tahun, jd ga rewel malem2 lagi. Cuma pengirimannya h+2 baru di drop ke ekspedisi ama sellernya wkwk agak h2r nunggunya. Tapi gapapa produknya terbukti ampuh dan wangi bgt!',
                 hasPhoto: false
             }
         ];
