@@ -27,6 +27,10 @@ module.exports = async (req, res) => {
       paymentStatus: r.get('payment_status'),
       cnoteNo: r.get('cnote_no') !== '-' ? r.get('cnote_no') : null,
       shippingStatus: deriveShippingStatus(r),
+      // ===== TAMBAHKAN FIELD INI =====
+      customerName: r.get('customer_name'),
+      customerPhone: r.get('customer_phone'),
+      fullAddress: r.get('full_address'),
     }));
 
     res.status(200).json({ success: true, orders });
