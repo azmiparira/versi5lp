@@ -1,6 +1,6 @@
 // ============================================================
 // tracking.js — Halaman Lacak Pesanan
-// Perbaikan: input HP dengan prefix +62, timeline, list dalam kotak
+// Perbaikan: prefix +62, timeline 4 langkah, detail lengkap, copy order ID, cari pakai order ID
 // ============================================================
 
 (function() {
@@ -20,10 +20,11 @@
     const MIN_REQUEST_INTERVAL = 2000;
 
     function showOnly(id) {
-        ['search-card', 'order-list-card', 'detail-card'].forEach((x) => {
+        ['search-card', 'detail-card'].forEach((x) => {
             const el = $(`#${x}`);
             if (el) el.style.display = x === id ? 'block' : 'none';
         });
+        // Order list tidak digunakan lagi (langsung ke detail)
     }
 
     const PAYMENT_LABELS = {
@@ -38,15 +39,17 @@
         INDOMARET: 'Indomaret',
     };
 
-    // ===== RENDER TIMELINE (DENGAN BULATAN & GARIS) =====
-    function renderTimeline(shippingStatus) {
+    // ============================================================
+    // 1. RENDER TIMELINE 4 LANGKAH (Dibayar → Dikemas → Dikirim → Diterima)
+    // ============================================================
+    function renderTimeline(shippingStatus, paymentType, paymentStatus) {
         const waitingBox = $('#waiting-payment-box');
         const timelineBox = $('#timeline-box');
 
         if (!waitingBox || !timelineBox) return;
 
-        // Jika status = MENUNGGU_PEMBAYARAN, tampilkan box khusus
-        if (shippingStatus === 'MENUNGGU_PEMBAYARAN') {
+        // Jika NON-COD dan belum PAID → Menunggu Pembayaran
+        if (paymentType === 'NONCOD' && paymentStatus !== 'PAID') {
             waitingBox.style.display = 'block';
             timelineBox.style.display = 'none';
             return;
@@ -54,51 +57,123 @@
         waitingBox.style.display = 'none';
         timelineBox.style.display = 'block';
 
-        // Langkah-langkah status
-        const steps = ['DIKEMAS', 'DIKIRIM', 'DITERIMA'];
-        const idx = steps.indexOf(shippingStatus);
+        // 4 status: DIBAYAR, DIKEMAS, DIKIRIM, DITERIMA
+        const steps = ['DIBAYAR', 'DIKEMAS', 'DIKIRIM', 'DITERIMA'];
+        // shippingStatus dari backend: DIKEMAS, DIKIRIM, DITERIMA, MENUNGGU_PEMBAYARAN
+        let idx = 0; // default DIBAYAR
+        if (shippingStatus === 'DIKEMAS') idx = 1;
+        else if (shippingStatus === 'DIKIRIM') idx = 2;
+        else if (shippingStatus === 'DITERIMA') idx = 3;
+        else idx = 1; // default ke DIKEMAS jika tidak ada status
 
-        // Update tiap step
         steps.forEach((s, i) => {
-            const el = $(`#tl-step-${i + 1}`);
+            const el = $(`#tl-step-4-${i + 1}`);
             if (el) {
                 el.classList.remove('done', 'current');
                 if (i < idx) {
-                    el.classList.add('done');       // selesai
+                    el.classList.add('done');
                 } else if (i === idx) {
-                    el.classList.add('current', 'done'); // aktif
+                    el.classList.add('current', 'done');
                 }
             }
         });
 
-        // Progress bar (garis)
-        const pct = idx <= 0 ? 0 : idx === 1 ? 50 : 100;
-        const progress = $('#tl-progress');
+        // Progress bar: 0% (belum), 33%, 66%, 100%
+        const pct = idx === 0 ? 0 : idx === 1 ? 33 : idx === 2 ? 66 : 100;
+        const progress = $('#tl-progress-4');
         if (progress) progress.style.width = `${pct}%`;
     }
 
-    // ===== RENDER DETAIL ORDER =====
+    // ============================================================
+    // 2. RENDER DETAIL ORDER (LENGKAP)
+    // ============================================================
     function renderDetail(order) {
         showOnly('detail-card');
-        const backBtn = $('#back-to-list');
+
+        // Kembali ke pencarian
+        const backBtn = $('#back-to-search');
         if (backBtn) {
-            backBtn.textContent = cameFromOrderParam ? '🛒 Belanja Lagi' : '← Kembali ke daftar';
+            backBtn.textContent = cameFromOrderParam ? '🛒 Belanja Lagi' : '← Kembali ke pencarian';
+            backBtn.onclick = () => {
+                if (cameFromOrderParam) {
+                    window.location.href = './index.html';
+                } else {
+                    showOnly('search-card');
+                    $('#phone-input').value = '';
+                    $('#order-id-input').value = '';
+                }
+            };
         }
 
-        const elements = {
-            'd-order-id': order.orderId,
-            'd-resi': order.cnoteNo || 'Menyiapkan resi…',
-            'd-product': `${order.productName || 'Spray Tidur'} × ${order.qty || 1}`,
-            'd-total': rupiah(order.totalPrice),
-            'd-payment': PAYMENT_LABELS[order.paymentChannel] || order.paymentType || '-',
-        };
-        Object.keys(elements).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = elements[id];
-        });
+        // Estimasi tiba (3-4 hari setelah order)
+        const estimateEl = $('#d-estimate');
+        if (estimateEl) {
+            const createdAt = new Date(order.createdAt);
+            if (!isNaN(createdAt)) {
+                const tgl1 = new Date(createdAt);
+                tgl1.setDate(tgl1.getDate() + 3);
+                const tgl2 = new Date(createdAt);
+                tgl2.setDate(tgl2.getDate() + 4);
+                const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                estimateEl.textContent = `Estimasi tiba ${tgl1.toLocaleDateString('id-ID', options)} - ${tgl2.toLocaleDateString('id-ID', options)}`;
+            } else {
+                estimateEl.textContent = 'Estimasi tiba 3-4 hari';
+            }
+        }
 
-        renderTimeline(order.shippingStatus || 'DIKEMAS');
+        // Order ID
+        const orderIdEl = $('#d-order-id');
+        if (orderIdEl) orderIdEl.textContent = order.orderId;
 
+        // Copy Order ID
+        const copyBtn = $('#copy-order-id');
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(order.orderId).then(() => {
+                    alert('Order ID berhasil disalin!');
+                }).catch(() => {
+                    // Fallback
+                    const input = document.createElement('input');
+                    input.value = order.orderId;
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(input);
+                    alert('Order ID berhasil disalin!');
+                });
+            };
+        }
+
+        // Customer info
+        const nameEl = $('#d-customer-name');
+        if (nameEl) nameEl.textContent = order.customerName || '-';
+        const phoneEl = $('#d-customer-phone');
+        if (phoneEl) phoneEl.textContent = order.customerPhone ? `(+62) ${order.customerPhone}` : '-';
+        const addressEl = $('#d-customer-address');
+        if (addressEl) addressEl.textContent = order.fullAddress || '-';
+
+        // Product info
+        const productNameEl = $('#d-product-name');
+        if (productNameEl) productNameEl.textContent = order.productName || 'Spray Tidur';
+        const productQtyEl = $('#d-product-qty');
+        if (productQtyEl) productQtyEl.textContent = `× ${order.qty || 1}`;
+        const productTotalEl = $('#d-product-total');
+        if (productTotalEl) productTotalEl.textContent = rupiah(order.totalPrice);
+
+        // Resi
+        const resiEl = $('#d-resi');
+        if (resiEl) resiEl.textContent = order.cnoteNo || 'Belum tersedia';
+
+        // Metode Bayar
+        const paymentEl = $('#d-payment');
+        if (paymentEl) {
+            paymentEl.textContent = PAYMENT_LABELS[order.paymentChannel] || order.paymentType || '-';
+        }
+
+        // Timeline
+        renderTimeline(order.shippingStatus || 'DIKEMAS', order.paymentType, order.paymentStatus);
+
+        // Tombol WA ke penjual
         const waBtn = $('#d-wa-btn');
         if (waBtn) {
             const msg = `Halo, saya mau tanya soal pesanan saya.\nOrder ID: ${order.orderId}`;
@@ -106,33 +181,9 @@
         }
     }
 
-    // ===== RENDER LIST ORDER (dalam kotak) =====
-    function renderOrderList(orders) {
-        showOnly('order-list-card');
-        const container = $('#order-list');
-        if (!container) return;
-        container.innerHTML = '';
-        const STATUS_LABELS = {
-            MENUNGGU_PEMBAYARAN: 'MENUNGGU PEMBAYARAN',
-            DIKEMAS: 'DIKEMAS',
-            DIKIRIM: 'DIKIRIM',
-            DITERIMA: 'DITERIMA'
-        };
-        orders.forEach((o) => {
-            const div = document.createElement('div');
-            div.className = 'order-list-item';
-            const chipClass = o.shippingStatus === 'MENUNGGU_PEMBAYARAN' ? 'status-chip pending' : 'status-chip';
-            div.innerHTML = `
-                <div class="oid">${o.orderId}</div>
-                <div class="meta">${o.productName || 'Spray Tidur'} × ${o.qty} — ${rupiah(o.totalPrice)}</div>
-                <div class="${chipClass}">${STATUS_LABELS[o.shippingStatus] || o.shippingStatus}</div>
-            `;
-            div.addEventListener('click', () => renderDetail(o));
-            container.appendChild(div);
-        });
-    }
-
-    // ===== SEARCH BY PHONE (dengan prefix +62) =====
+    // ============================================================
+    // 3. SEARCH BY PHONE (dengan prefix +62)
+    // ============================================================
     async function searchByPhone(phone) {
         // Throttle
         const now = Date.now();
@@ -146,7 +197,6 @@
         if (msgEl) msgEl.style.display = 'none';
 
         try {
-            // Kirim phone (sudah bersih dari non-digit, tanpa 0 di depan)
             const res = await fetch(`${API_BASE_URL}/track-order?phone=${encodeURIComponent(phone)}`);
             const json = await res.json();
 
@@ -159,25 +209,44 @@
                 return;
             }
 
+            // Jika ada banyak pesanan, tampilkan yang pertama atau pilih manual
+            // Untuk sekarang, tampilkan pesanan terbaru
             if (json.orders.length === 1) {
                 renderDetail(json.orders[0]);
             } else {
-                renderOrderList(json.orders);
+                // Tampilkan pesanan terbaru (createdAt terakhir)
+                const sorted = json.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                renderDetail(sorted[0]);
+                // Tampilkan pesan bahwa ada lebih dari 1
+                if (msgEl) {
+                    msgEl.textContent = `Menampilkan pesanan terbaru dari ${json.orders.length} pesanan.`;
+                    msgEl.style.display = 'block';
+                    msgEl.style.color = '#4CAF50';
+                }
             }
         } catch (e) {
             if (msgEl) {
                 msgEl.textContent = e.message || 'Gagal mencari pesanan.';
                 msgEl.style.display = 'block';
+                msgEl.style.color = '#d32f2f';
             }
         }
     }
 
-    // ===== LOAD BY ORDER ID =====
+    // ============================================================
+    // 4. LOAD BY ORDER ID
+    // ============================================================
     async function loadByOrderId(orderId) {
+        const msgEl = $('#search-msg');
+        if (msgEl) msgEl.style.display = 'none';
+
         try {
             const res = await fetch(`${API_BASE_URL}/check-status?orderId=${encodeURIComponent(orderId)}`);
             const json = await res.json();
+
             if (!json.success) throw new Error(json.message);
+
+            // Jika order ditemukan, tampilkan detail
             renderDetail({
                 orderId: json.orderId,
                 productName: json.productName,
@@ -185,37 +254,43 @@
                 totalPrice: json.totalPrice,
                 paymentType: json.paymentType,
                 paymentChannel: json.paymentChannel,
+                paymentStatus: json.paymentStatus,
                 shippingStatus: json.shippingStatus,
                 cnoteNo: json.cnoteNo,
+                customerName: json.customerName,
+                customerPhone: json.customerPhone,
+                fullAddress: json.fullAddress,
+                createdAt: json.createdAt,
             });
         } catch (e) {
-            showOnly('search-card');
-            const msgEl = $('#search-msg');
             if (msgEl) {
-                msgEl.textContent = 'Order tidak ditemukan, coba cari lewat nomor HP.';
+                msgEl.textContent = 'Order tidak ditemukan. Coba cari lewat nomor HP.';
                 msgEl.style.display = 'block';
+                msgEl.style.color = '#d32f2f';
             }
         }
     }
 
     // ============================================================
-    // INIT
+    // 5. INIT
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         const searchBtn = $('#search-btn');
         const phoneInput = $('#phone-input');
+        const orderInput = $('#order-id-input');
+        const searchOrderBtn = $('#search-order-btn');
 
-        // ===== SEARCH =====
+        // ===== SEARCH BY PHONE =====
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
                 const raw = phoneInput ? phoneInput.value.trim() : '';
-                // Hapus semua karakter non-digit (prefix +62 sudah di HTML)
                 const phone = raw.replace(/\D/g, '');
                 if (phone.length < 8) {
                     const msgEl = $('#search-msg');
                     if (msgEl) {
                         msgEl.textContent = 'Nomor HP tidak valid (minimal 8 digit).';
                         msgEl.style.display = 'block';
+                        msgEl.style.color = '#d32f2f';
                     }
                     return;
                 }
@@ -232,27 +307,34 @@
             });
         }
 
-        // ===== TOMBOL KEMBALI =====
-        const backToSearch = $('#back-to-search');
-        if (backToSearch) {
-            backToSearch.addEventListener('click', () => showOnly('search-card'));
-        }
-
-        const backToList = $('#back-to-list');
-        if (backToList) {
-            backToList.addEventListener('click', () => {
-                if (cameFromOrderParam) {
-                    window.location.href = './index.html';
+        // ===== SEARCH BY ORDER ID =====
+        if (searchOrderBtn) {
+            searchOrderBtn.addEventListener('click', () => {
+                const orderId = orderInput ? orderInput.value.trim() : '';
+                if (!orderId) {
+                    const msgEl = $('#search-msg');
+                    if (msgEl) {
+                        msgEl.textContent = 'Masukkan Order ID!';
+                        msgEl.style.display = 'block';
+                        msgEl.style.color = '#d32f2f';
+                    }
                     return;
                 }
-                const raw = phoneInput ? phoneInput.value.trim() : '';
-                const phone = raw.replace(/\D/g, '');
-                if (phone) searchByPhone(phone);
-                else showOnly('search-card');
+                cameFromOrderParam = true;
+                loadByOrderId(orderId);
             });
         }
 
-        // ===== CEK PARAMETER ORDER =====
+        if (orderInput) {
+            orderInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const btn = $('#search-order-btn');
+                    if (btn) btn.click();
+                }
+            });
+        }
+
+        // ===== CEK PARAMETER ORDER DARI CHECKOUT =====
         const params = new URLSearchParams(window.location.search);
         const orderIdParam = params.get('order');
         if (orderIdParam) {
