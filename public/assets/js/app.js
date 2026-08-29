@@ -5,6 +5,8 @@
 // - Voucher coret total asli, bukan harga produk
 // - Tombol konfirmasi di packed dihapus
 // - Sticky footer disembunyikan di payment/packed
+// - Setelah pembayaran sukses redirect ke tracking dengan order ID
+// - LocalStorage untuk restore halaman payment saat refresh
 // ============================================================
 
 (function() {
@@ -382,7 +384,6 @@
             }
         });
 
-        // Sembunyikan sticky footer di payment/packed
         const footer = document.getElementById('sticky-footer');
         if (footer) {
             if (id === 'payment' || id === 'packed') {
@@ -473,11 +474,10 @@
     }
 
     // ============================================================
-    // 9. CHECKOUT (dengan prefix +62)
+    // 9. CHECKOUT (dengan prefix +62 & redirect ke tracking setelah bayar)
     // ============================================================
     async function handleCheckout() {
         const nama = document.getElementById('full-name').value.trim();
-        // Ambil nilai dari input (tanpa prefix +62, karena prefix sudah di HTML)
         let noHp = document.getElementById('phone').value.trim();
         const provinsi = document.getElementById('provinsi').value;
         const kabupaten = document.getElementById('kabupaten').value;
@@ -486,7 +486,6 @@
         const destId = document.getElementById('destination-address-id')?.value || '';
 
         if (!nama) { alert('Nama lengkap wajib diisi!'); return; }
-        // Hapus karakter non-digit, tapi pertahankan awalan 8 (karena sudah tanpa 0)
         noHp = noHp.replace(/\D/g, '');
         if (noHp.length < 8 || noHp.length > 15) { alert('Nomor HP tidak valid (minimal 8 digit)!'); return; }
         if (!kecamatan || !alamat || !destId) { alert('Harap pilih kecamatan dari daftar dan isi alamat lengkap!'); return; }
@@ -501,7 +500,7 @@
         try {
             const payload = {
                 customerName: nama,
-                customerPhone: noHp, // kirim tanpa 0 di depan (contoh: 8123456789)
+                customerPhone: noHp,
                 province: provinsi,
                 city: kabupaten,
                 district: kecamatan,
@@ -541,7 +540,8 @@
             };
 
             if (isCOD) {
-                showPackedPage(currentOrderData);
+                // COD: langsung redirect ke tracking dengan order ID
+                window.location.href = `./tracking.html?order=${result.orderId}`;
             } else {
                 if (result.payment) {
                     showPaymentPage(result.payment, currentOrderData);
@@ -624,9 +624,15 @@
                         waBtn.style.display = 'inline-block';
                         waBtn.onclick = () => {
                             sessionStorage.removeItem('pendingPayment');
-                            showPackedPage(orderData);
+                            // Redirect ke tracking dengan order ID
+                            window.location.href = `./tracking.html?order=${orderData.orderId}`;
                         };
                     }
+                    // Auto redirect setelah 2 detik
+                    setTimeout(() => {
+                        sessionStorage.removeItem('pendingPayment');
+                        window.location.href = `./tracking.html?order=${orderData.orderId}`;
+                    }, 2000);
                 } else if (pollCount >= maxPolls) {
                     clearInterval(paymentPollTimer);
                     paymentPollTimer = null;
@@ -637,7 +643,7 @@
                         waBtn.style.display = 'inline-block';
                         waBtn.onclick = () => {
                             sessionStorage.removeItem('pendingPayment');
-                            showPackedPage(orderData);
+                            window.location.href = `./tracking.html?order=${orderData.orderId}`;
                         };
                     }
                 }
@@ -654,99 +660,27 @@
     }
 
     // ============================================================
-    // 11. SHOW PACKED PAGE (tanpa tombol konfirmasi)
+    // 11. RESTORE PENDING PAYMENT
     // ============================================================
-    function showPackedPage(data) {
-        showSection('packed');
-        const elements = {
-            'packed-order-id': data.orderId,
-            'packed-resi': data.resi || '-',
-            'packed-courier': data.kurir,
-            'packed-total': data.totalHarga.toLocaleString(),
-            'packed-method': data.metodeBayar,
-        };
-        Object.keys(elements).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = elements[id];
-        });
-
-        const btnWa = document.getElementById('btn-wa-packed');
-        if (btnWa) {
-            btnWa.onclick = () => {
-                const pesan = `Halo ${data.nama},\n\nPesanan Anda (${data.orderId}) sudah dikemas.\nResi: ${data.resi || '-'}\nTotal: Rp ${data.totalHarga.toLocaleString()}\nKurir: ${data.kurir}\n\nTerima kasih!`;
-                const url = `https://wa.me/${data.noHp.replace(/^0+/, '')}?text=${encodeURIComponent(pesan)}`;
-                window.open(url, '_blank');
-            };
-        }
-
-        // ===== TOMBOL KONFIRMASI SUDAH DIHAPUS DARI HTML =====
-
-        document.getElementById('btn-back-home-packed').onclick = () => {
-            sessionStorage.removeItem('pendingPayment');
-            showSection('landing');
-        };
-    }
-
-    // ============================================================
-    // 12. HANDLE TRACKING
-    // ============================================================
-    async function handleTracking() {
-        const noHp = document.getElementById('track-phone').value.trim();
-        if (!noHp) {
-            alert('Masukkan No HP!');
-            return;
-        }
-
+    function restorePendingPayment() {
         try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/track-order?phone=${encodeURIComponent(noHp)}`);
-            const result = await response.json();
-            const resultDiv = document.getElementById('tracking-result');
-            if (!resultDiv) return;
-
-            if (result.success && result.orders && result.orders.length > 0) {
-                let html = '';
-                result.orders.forEach(order => {
-                    let status = order.shippingStatus || 'DIKEMAS';
-                    let step = 1;
-                    if (status === 'DIKIRIM') step = 2;
-                    else if (status === 'DITERIMA') step = 3;
-                    else if (status === 'MENUNGGU_PEMBAYARAN') step = 0;
-
-                    html += `<div class="tracking-item">
-                        <p><strong>Order ID:</strong> ${order.orderId}</p>
-                        <p><strong>Resi:</strong> ${order.cnoteNo || '-'}</p>
-                        <p><strong>Kurir:</strong> ${order.courierChoice || '-'}</p>
-                        <p><strong>Total:</strong> Rp ${(order.totalPrice || 0).toLocaleString()}</p>
-                        <div class="tracking-progress">
-                            <div class="tracking-step ${step >= 1 ? 'done' : ''}">
-                                <div class="step-icon"><i class="fas fa-box"></i></div>
-                                <span class="step-label">Dikemas</span>
-                            </div>
-                            <div class="tracking-step ${step >= 2 ? 'done' : ''}">
-                                <div class="step-icon"><i class="fas fa-truck"></i></div>
-                                <span class="step-label">Dikirim</span>
-                            </div>
-                            <div class="tracking-step ${step >= 3 ? 'done' : ''}">
-                                <div class="step-icon"><i class="fas fa-check-circle"></i></div>
-                                <span class="step-label">Diterima</span>
-                            </div>
-                        </div>
-                        ${step === 0 ? '<p style="color:#e65100;font-weight:bold;">⏳ Menunggu Pembayaran</p>' : ''}
-                    </div>`;
-                });
-                resultDiv.innerHTML = html;
-                resultDiv.style.display = 'block';
-            } else {
-                resultDiv.innerHTML = `<p style="color:red;">${result.message || 'Pesanan tidak ditemukan'}</p>`;
-                resultDiv.style.display = 'block';
+            const pending = sessionStorage.getItem('pendingPayment');
+            if (pending) {
+                const data = JSON.parse(pending);
+                if (Date.now() - data.timestamp < 30 * 60 * 1000) {
+                    console.log('⏳ Restoring pending payment:', data.orderId);
+                    showPaymentPage(data.cashiResp, data.orderData);
+                    return true;
+                } else {
+                    sessionStorage.removeItem('pendingPayment');
+                }
             }
-        } catch (err) {
-            alert('Error: ' + err.message);
-        }
+        } catch(e) {}
+        return false;
     }
 
     // ============================================================
-    // 13. COUNTDOWN
+    // 12. COUNTDOWN
     // ============================================================
     function startCountdown() {
         let totalSeconds = 1800;
@@ -765,7 +699,7 @@
     }
 
     // ============================================================
-    // 14. GIMMICKS
+    // 13. GIMMICKS
     // ============================================================
     function startGimmicks() {
         let sold = 10234;
@@ -838,27 +772,7 @@
     }
 
     // ============================================================
-    // 15. RESTORE PENDING PAYMENT
-    // ============================================================
-    function restorePendingPayment() {
-        try {
-            const pending = sessionStorage.getItem('pendingPayment');
-            if (pending) {
-                const data = JSON.parse(pending);
-                if (Date.now() - data.timestamp < 30 * 60 * 1000) {
-                    console.log('⏳ Restoring pending payment:', data.orderId);
-                    showPaymentPage(data.cashiResp, data.orderData);
-                    return true;
-                } else {
-                    sessionStorage.removeItem('pendingPayment');
-                }
-            }
-        } catch(e) {}
-        return false;
-    }
-
-    // ============================================================
-    // 16. INIT
+    // 14. INIT
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         const restored = restorePendingPayment();
@@ -936,11 +850,6 @@
             btnTrackHeader.addEventListener('click', function() {
                 window.location.href = './tracking.html';
             });
-        }
-
-        const btnTrackSubmit = document.getElementById('btn-track-submit');
-        if (btnTrackSubmit) {
-            btnTrackSubmit.addEventListener('click', handleTracking);
         }
 
         // BACK BUTTONS
