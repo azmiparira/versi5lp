@@ -39,11 +39,16 @@ module.exports = async (req, res) => {
       orderId,
       paymentStatus,
       paymentType: row.get('payment_type'),
+      paymentChannel: row.get('payment_channel'),
       shippingStatus: deriveShippingStatus(row),
       cnoteNo: row.get('cnote_no') !== '-' ? row.get('cnote_no') : null,
       productName: row.get('product_name'),
       qty: row.get('qty'),
       totalPrice: row.get('total_price'),
+      customerName: row.get('customer_name'),
+      customerPhone: row.get('customer_phone'),
+      fullAddress: row.get('full_address'),
+      createdAt: row.get('created_at'),
     });
   } catch (err) {
     console.error('check-status error:', err);
