@@ -1,7 +1,7 @@
 /* ============================================================
    SPRAY TIDUR — style.css (FULL)
    Landing page mobile-first dengan tema putih & hijau
-   Semua fitur: prefix +62, timeline 4 langkah, order detail, voucher coretan
+   Semua fitur: prefix +62, timeline 4 langkah, detail tracking, voucher coretan
    ============================================================ */
 
 * {
@@ -764,7 +764,7 @@ body {
     }
 }
 
-/* ===== PACKED PAGE (tidak digunakan lagi, tapi dipertahankan) ===== */
+/* ===== PACKED PAGE ===== */
 .success-icon {
     font-size: 60px;
     color: #25D366;
@@ -805,7 +805,11 @@ body {
     margin: 16px 0;
 }
 
-/* ===== TRACKING ===== */
+/* ============================================================
+   TRACKING PAGE
+   ============================================================ */
+
+/* Search form */
 .tracking-form {
     display: flex;
     gap: 10px;
@@ -825,7 +829,51 @@ body {
     border-radius: 12px;
 }
 
-/* ===== TRACKING DETAIL ===== */
+.tracking-result {
+    margin-top: 20px;
+}
+
+/* Order list item (untuk multiple orders) */
+.order-list-item {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.order-list-item:hover {
+    border-color: #4CAF50;
+    background: #f9fcf9;
+}
+.order-list-item .oid {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+.order-list-item .meta {
+    font-size: 13px;
+    color: #666;
+    margin-top: 2px;
+}
+.order-list-item .status-chip {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 30px;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.order-list-item .status-chip.pending {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+/* Tracking detail */
 .tracking-item {
     background: #f8f9fa;
     padding: 16px;
@@ -834,9 +882,7 @@ body {
     border: 1px solid #e0e0e0;
 }
 
-
 /* ===== TIMELINE 4 LANGKAH (Dibayar → Dikemas → Dikirim → Diterima) ===== */
-
 .timeline-4 {
     display: flex;
     justify-content: space-between;
@@ -844,27 +890,34 @@ body {
     margin: 24px 0 12px;
     padding: 0 4px;
 }
+
+/* Garis background */
 .timeline-4::before {
     content: '';
     position: absolute;
     top: 18px;
-    left: 8%;
-    right: 8%;
+    left: 10%;
+    right: 10%;
     height: 4px;
-    background: #ddd;
+    background: #e0e0e0;
     z-index: 0;
     border-radius: 2px;
 }
+
+/* Progress bar (garis hijau) */
 .tl-progress-4 {
     position: absolute;
     top: 18px;
-    left: 8%;
+    left: 10%;
     height: 4px;
     background: #4CAF50;
     z-index: 1;
     border-radius: 2px;
     transition: width 0.5s ease;
+    width: 0%;
 }
+
+/* Setiap step */
 .tl-step-4 {
     position: relative;
     z-index: 2;
@@ -873,34 +926,44 @@ body {
     align-items: center;
     width: 25%;
 }
+
+/* Bulatan */
 .tl-dot-4 {
     width: 38px;
     height: 38px;
     border-radius: 50%;
     background: #fff;
-    border: 3px solid #ddd;
+    border: 3px solid #d0d0d0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
     transition: 0.3s;
+    color: #999;
 }
+
+/* Status done (selesai) */
 .tl-step-4.done .tl-dot-4 {
     border-color: #4CAF50;
     background: #4CAF50;
     color: #fff;
 }
+
+/* Status current (aktif) */
 .tl-step-4.current .tl-dot-4 {
     border-color: #4CAF50;
     background: #fff;
     color: #4CAF50;
     box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
 }
+
+/* Label di bawah bulatan */
 .tl-label-4 {
     font-size: 11px;
     font-weight: 600;
     margin-top: 6px;
-    color: #666;
+    color: #999;
+    text-align: center;
 }
 .tl-step-4.done .tl-label-4,
 .tl-step-4.current .tl-label-4 {
@@ -908,7 +971,7 @@ body {
     font-weight: 700;
 }
 
-/* ===== MENUNGGU PEMBAYARAN ===== */
+/* ===== WAITING PAYMENT BOX ===== */
 .waiting-payment-box {
     text-align: center;
     padding: 22px 10px;
@@ -916,18 +979,15 @@ body {
     border-radius: 12px;
     margin: 18px 0;
 }
-
 .waiting-payment-box .wp-icon {
     font-size: 30px;
     margin-bottom: 6px;
 }
-
 .waiting-payment-box .wp-title {
     font-weight: 800;
     font-size: 16px;
     color: #A66A00;
 }
-
 .waiting-payment-box .wp-sub {
     font-size: 12.5px;
     color: #666;
@@ -942,13 +1002,11 @@ body {
     padding: 16px;
     margin: 16px 0;
 }
-
 .resi-box .k {
     font-size: 11px;
     text-transform: uppercase;
     color: #666;
 }
-
 .resi-box .v {
     font-weight: 800;
     font-size: 18px;
@@ -974,46 +1032,29 @@ body {
     margin-top: 10px;
     transition: 0.2s;
 }
-
 .wa-btn:hover {
     opacity: 0.9;
 }
-
 .wa-btn .icon-box {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255,255,255,0.25);
     flex: none;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
-
 .wa-btn .icon-box img {
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
 
-/* ===== COPY ORDER ID BUTTON ===== */
-#copy-order-id {
-    background: none;
-    border: none;
-    color: #4CAF50;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: 0.2s;
-}
-
-#copy-order-id:hover {
-    background: #e8f5e9;
-}
-
-/* ===== NOTIFIKASI POPUP ===== */
+/* ============================================================
+   NOTIFIKASI POPUP
+   ============================================================ */
 .notification-popup {
     position: fixed;
     bottom: 90px;
@@ -1090,7 +1131,6 @@ body {
     margin-top: 10px;
     display: none;
 }
-
 .form-msg.show {
     display: block;
 }
@@ -1101,145 +1141,82 @@ body {
     border: 1px solid #e0e0e0;
     border-radius: 16px;
     padding: 18px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-
 .card + .card {
     margin-top: 12px;
 }
-
 .section-title {
     font-size: 19px;
     font-weight: 700;
     margin: 0 0 4px;
 }
-
 .section-sub {
     font-size: 13px;
     color: #666;
     margin: 0 0 14px;
 }
 
-/* ===== RESPONSIVE TWEAKS ===== */
+/* ============================================================
+   RESPONSIVE TWEAKS
+   ============================================================ */
 @media (max-width: 380px) {
     .product-title {
         font-size: 19px;
     }
-
     .package-box {
         flex-direction: column;
         align-items: stretch;
     }
-
     .qty-control {
         align-self: center;
     }
-
     .payment-item,
     .courier-item {
         padding: 8px 12px;
     }
-
     .payment-item .icon-box,
     .courier-item .icon-box {
         width: 28px;
         height: 28px;
     }
-
     .tracking-form {
         flex-direction: column;
     }
-
     .tracking-form .btn-primary {
         width: 100%;
         justify-content: center;
     }
-
     .phone-prefix {
         font-size: 12px;
         padding: 10px 6px 10px 10px;
     }
-
     .phone-wrapper input {
         padding: 10px 10px !important;
         font-size: 13px;
     }
-
-    .timeline-4 {
-        padding: 0 2px;
-    }
-
     .tl-dot-4 {
         width: 32px;
         height: 32px;
         font-size: 13px;
     }
-
     .tl-label-4 {
-        font-size: 9px;
+        font-size: 10px;
     }
 }
 
-/* ===== UTILITY ===== */
+/* ============================================================
+   UTILITY
+   ============================================================ */
 .text-center {
     text-align: center;
 }
-
 .mt-8 {
     margin-top: 8px;
 }
-
 .mt-16 {
     margin-top: 16px;
 }
-
 .hidden {
     display: none !important;
-}
-
-/* ============================================================
-   ORDER LIST ITEM (tidak digunakan, tapi dipertahankan)
-   ============================================================ */
-.order-list-item {
-    border: 1.5px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    background: #fff;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
-.order-list-item:hover {
-    border-color: #4CAF50;
-    background: #f9fcf9;
-}
-
-.order-list-item .oid {
-    font-weight: 700;
-    font-size: 14px;
-    color: #1a1a1a;
-}
-
-.order-list-item .meta {
-    font-size: 13px;
-    color: #666;
-    margin-top: 2px;
-}
-
-.order-list-item .status-chip {
-    display: inline-block;
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 30px;
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-
-.order-list-item .status-chip.pending {
-    background: #fff3e0;
-    color: #e65100;
 }
